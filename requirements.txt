@@ -1,0 +1,25 @@
+# ---------------------------------------------------------------------------
+# Dépendances de base — PharmaGest (développement et exécution)
+# Python 3.12+ recommandé (testé avec Python 3.14 et Django 5.2)
+# Installation : .venv/bin/pip install -r requirements.txt
+# ---------------------------------------------------------------------------
+
+Django>=5.2,<6
+Pillow>=10.0
+reportlab>=4.0
+
+# ---------------------------------------------------------------------------
+# Production uniquement — décommenter selon le besoin de déploiement.
+# Ces paquets ne sont pas nécessaires pour le développement SQLite.
+# ---------------------------------------------------------------------------
+
+# Pilote PostgreSQL (recommandé en production) :
+# psycopg[binary]>=3.1
+
+# Serveur WSGI/ASGI de production (à placer derrière Nginx ou un proxy TLS) :
+# gunicorn>=21.2
+
+# Optionnel : lecture automatique d'un fichier .env par le processus Django.
+# PharmaGest lit les variables avec os.environ ; si vous préférez un chargement
+# automatique, ajoutez python-dotenv et adaptez manage.py/wsgi.py.
+# python-dotenv>=1.0
