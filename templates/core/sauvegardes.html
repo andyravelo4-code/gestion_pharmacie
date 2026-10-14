@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block titre %}Sauvegardes{% endblock %}
+{% block titre_page %}Sauvegardes de la base de données{% endblock %}
+{% block sous_titre_page %}<div class="sub">Copies cohérentes à conserver dans un emplacement protégé</div>{% endblock %}
+
+{% block contenu %}
+<div class="row g-4">
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-hdd me-2"></i>Nouvelle sauvegarde</div>
+      <div class="card-body">
+        <p class="text-muted small">La sauvegarde est créée dans <code>{{ dossier }}</code>. Testez régulièrement la restauration.</p>
+        <form method="post">
+          {% csrf_token %}
+          <button class="btn btn-primary w-100"><i class="bi bi-download me-1"></i>Créer une sauvegarde</button>
+        </form>
+        <div class="alert alert-info small mt-3 mb-0">
+          <i class="bi bi-terminal me-1"></i> En ligne de commande :
+          <div class="mt-1"><code>python manage.py sauvegarde_db</code></div>
+          <div><code>python manage.py restaurer_db backups/fichier.sqlite3</code></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-archive me-2"></i>Fichiers disponibles</div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead><tr><th>Fichier</th><th>Date</th><th class="text-end">Taille</th><th class="text-end">Action</th></tr></thead>
+          <tbody>
+          {% for fichier in sauvegardes %}
+            <tr>
+              <td class="fw-semibold">{{ fichier.nom }}</td>
+              <td>{{ fichier.date|date:"d/m/Y H:i" }}</td>
+              <td class="text-end">{{ fichier.taille|filesizeformat }}</td>
+              <td class="text-end"><a class="btn btn-sm btn-outline-primary" href="{% url 'core:telecharger_sauvegarde' fichier.nom %}"><i class="bi bi-download"></i></a></td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="4" class="text-center text-muted py-4">Aucune sauvegarde pour le moment.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
