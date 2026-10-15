@@ -1,0 +1,26 @@
+{% if page_obj.has_other_pages %}
+<nav class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3" aria-label="Pagination">
+  <div class="text-muted small">
+    Page {{ page_obj.number }} sur {{ page_obj.paginator.num_pages }} · {{ page_obj.paginator.count }} résultat{{ page_obj.paginator.count|pluralize }}
+  </div>
+  <ul class="pagination pagination-sm mb-0">
+    <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
+      <a class="page-link" href="{% if page_obj.has_previous %}{% querystring page=page_obj.previous_page_number %}{% else %}#{% endif %}" aria-label="Précédent">
+        <i class="bi bi-chevron-left"></i>
+      </a>
+    </li>
+    {% for numero in page_obj.paginator.page_range %}
+      {% if numero == page_obj.number %}
+        <li class="page-item active"><span class="page-link">{{ numero }}</span></li>
+      {% elif numero > page_obj.number|add:"-3" and numero < page_obj.number|add:"3" %}
+        <li class="page-item"><a class="page-link" href="{% querystring page=numero %}">{{ numero }}</a></li>
+      {% endif %}
+    {% endfor %}
+    <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
+      <a class="page-link" href="{% if page_obj.has_next %}{% querystring page=page_obj.next_page_number %}{% else %}#{% endif %}" aria-label="Suivant">
+        <i class="bi bi-chevron-right"></i>
+      </a>
+    </li>
+  </ul>
+</nav>
+{% endif %}

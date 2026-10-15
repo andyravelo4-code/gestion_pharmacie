@@ -1,0 +1,172 @@
+{% load static %}
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titre %}PharmaGest{% endblock %} · {{ pharmacie.nom }}</title>
+  <link rel="stylesheet" href="{% static 'vendor/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="{% static 'vendor/bootstrap-icons.css' %}">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  {% block styles %}{% endblock %}
+</head>
+<body>
+<div class="app-shell">
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+  <aside class="sidebar" id="sidebar">
+    <a href="{% url 'rapports:tableau_bord' %}" class="brand text-decoration-none">
+      <span class="logo"><i class="bi bi-capsule-pill"></i></span>
+      <span>
+        <strong>PharmaGest</strong>
+        <small>Gestion pharmaceutique</small>
+      </span>
+    </a>
+    <nav class="nav flex-column">
+      <div class="nav-section">Pilotage</div>
+      <a class="nav-link {% if request.resolver_match.namespace == 'rapports' and request.resolver_match.url_name == 'tableau_bord' %}active{% endif %}" href="{% url 'rapports:tableau_bord' %}">
+        <i class="bi bi-speedometer2"></i> Tableau de bord
+      </a>
+
+      <div class="nav-section">Catalogue</div>
+      <a class="nav-link {% if request.resolver_match.namespace == 'medicaments' and request.resolver_match.url_name == 'liste' or request.resolver_match.url_name == 'detail' %}active{% endif %}" href="{% url 'medicaments:liste' %}">
+        <i class="bi bi-capsule"></i> Médicaments
+      </a>
+      {% if peut_medicaments %}
+      <a class="nav-link {% if request.resolver_match.namespace == 'medicaments' and 'categorie' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'medicaments:categories' %}">
+        <i class="bi bi-tags"></i> Catégories
+      </a>
+      {% endif %}
+
+      {% if peut_stock %}
+      <div class="nav-section">Approvisionnement</div>
+      <a class="nav-link {% if request.resolver_match.namespace == 'stock' and request.resolver_match.url_name == 'tableau' %}active{% endif %}" href="{% url 'stock:tableau' %}">
+        <i class="bi bi-box-seam"></i> Stock
+      </a>
+      <a class="nav-link {% if request.resolver_match.namespace == 'stock' and request.resolver_match.url_name == 'lots' %}active{% endif %}" href="{% url 'stock:lots' %}">
+        <i class="bi bi-layers"></i> Lots & péremptions
+      </a>
+      <a class="nav-link {% if request.resolver_match.namespace == 'stock' and request.resolver_match.url_name == 'alertes' %}active{% endif %}" href="{% url 'stock:alertes' %}">
+        <i class="bi bi-exclamation-triangle"></i> Alertes
+      </a>
+      {% endif %}
+
+      {% if peut_achats %}
+      <a class="nav-link {% if request.resolver_match.namespace == 'achats' and request.resolver_match.url_name != 'receptions' and request.resolver_match.url_name != 'reception_detail' %}active{% endif %}" href="{% url 'achats:liste' %}">
+        <i class="bi bi-cart-plus"></i> Achats
+      </a>
+      <a class="nav-link {% if request.resolver_match.namespace == 'achats' and request.resolver_match.url_name == 'receptions' or request.resolver_match.url_name == 'reception_detail' %}active{% endif %}" href="{% url 'achats:receptions' %}">
+        <i class="bi bi-truck"></i> Réceptions
+      </a>
+      <a class="nav-link {% if request.resolver_match.namespace == 'fournisseurs' %}active{% endif %}" href="{% url 'fournisseurs:liste' %}">
+        <i class="bi bi-building"></i> Fournisseurs
+      </a>
+      {% endif %}
+
+      {% if peut_ventes %}
+      <div class="nav-section">Comptoir</div>
+      <a class="nav-link {% if request.resolver_match.namespace == 'ventes' and request.resolver_match.url_name == 'caisse' %}active{% endif %}" href="{% url 'ventes:caisse' %}">
+        <i class="bi bi-cash-register"></i> Caisse
+      </a>
+      <a class="nav-link {% if request.resolver_match.namespace == 'ventes' and request.resolver_match.url_name == 'liste' %}active{% endif %}" href="{% url 'ventes:liste' %}">
+        <i class="bi bi-receipt"></i> Ventes
+      </a>
+      <a class="nav-link {% if request.resolver_match.namespace == 'ventes' and request.resolver_match.url_name == 'retours' %}active{% endif %}" href="{% url 'ventes:retours' %}">
+        <i class="bi bi-arrow-return-left"></i> Retours
+      </a>
+      <a class="nav-link {% if request.resolver_match.namespace == 'clients' %}active{% endif %}" href="{% url 'clients:liste' %}">
+        <i class="bi bi-people"></i> Clients
+      </a>
+      {% endif %}
+
+      {% if peut_rapports %}
+      <div class="nav-section">Analyse</div>
+      <a class="nav-link {% if request.resolver_match.namespace == 'rapports' and request.resolver_match.url_name == 'ventes' %}active{% endif %}" href="{% url 'rapports:ventes' %}">
+        <i class="bi bi-graph-up"></i> Rapport des ventes
+      </a>
+      <a class="nav-link {% if request.resolver_match.namespace == 'rapports' and request.resolver_match.url_name == 'achats' %}active{% endif %}" href="{% url 'rapports:achats' %}">
+        <i class="bi bi-bar-chart"></i> Rapport des achats
+      </a>
+      <a class="nav-link {% if request.resolver_match.namespace == 'rapports' and request.resolver_match.url_name == 'stock' %}active{% endif %}" href="{% url 'rapports:stock' %}">
+        <i class="bi bi-clipboard-data"></i> Rapport de stock
+      </a>
+      <a class="nav-link {% if request.resolver_match.namespace == 'rapports' and request.resolver_match.url_name == 'peremptions' %}active{% endif %}" href="{% url 'rapports:peremptions' %}">
+        <i class="bi bi-calendar-x"></i> Péremptions
+      </a>
+      {% endif %}
+
+      {% if peut_utilisateurs or peut_parametres %}
+      <div class="nav-section">Administration</div>
+      {% if peut_utilisateurs %}
+      <a class="nav-link {% if request.resolver_match.namespace == 'utilisateurs' and request.resolver_match.url_name == 'liste' %}active{% endif %}" href="{% url 'utilisateurs:liste' %}">
+        <i class="bi bi-person-gear"></i> Utilisateurs
+      </a>
+      {% endif %}
+      {% if peut_parametres %}
+      <a class="nav-link {% if request.resolver_match.namespace == 'core' and request.resolver_match.url_name == 'parametres' %}active{% endif %}" href="{% url 'core:parametres' %}">
+        <i class="bi bi-sliders"></i> Paramètres
+      </a>
+      <a class="nav-link {% if request.resolver_match.namespace == 'core' and request.resolver_match.url_name == 'sauvegardes' %}active{% endif %}" href="{% url 'core:sauvegardes' %}">
+        <i class="bi bi-hdd"></i> Sauvegardes
+      </a>
+      <a class="nav-link {% if request.resolver_match.namespace == 'rapports' and request.resolver_match.url_name == 'journal' %}active{% endif %}" href="{% url 'rapports:journal' %}">
+        <i class="bi bi-journal-text"></i> Journal d'audit
+      </a>
+      {% endif %}
+      {% endif %}
+    </nav>
+    <div class="sidebar-footer">
+      <div><i class="bi bi-shield-check me-1"></i> Données tracées et sécurisées</div>
+      <div class="mt-1">Version 1.0 · {% now "Y" %}</div>
+    </div>
+  </aside>
+
+  <div class="app-main">
+    <header class="topbar">
+      <button class="btn btn-light btn-sm d-lg-none" type="button" data-toggle-sidebar aria-label="Menu">
+        <i class="bi bi-list"></i>
+      </button>
+      <div class="page-heading flex-grow-1">
+        <h1>{% block titre_page %}Tableau de bord{% endblock %}</h1>
+        {% block sous_titre_page %}{% endblock %}
+      </div>
+      <div class="user-chip">
+        <div class="text-end d-none d-md-block">
+          <div class="fw-semibold" style="font-size:.85rem;">{{ user.nom_complet }}</div>
+          <div class="text-muted" style="font-size:.72rem;">{{ user.role_principal }}</div>
+        </div>
+        <div class="dropdown">
+          <button class="btn p-0 border-0" data-bs-toggle="dropdown" aria-expanded="false">
+            <span class="avatar">{{ user.nom_complet|slice:":1"|upper }}</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+            <li><h6 class="dropdown-header">{{ user.username }}</h6></li>
+            <li><a class="dropdown-item" href="{% url 'utilisateurs:profil' %}"><i class="bi bi-person me-2"></i>Mon profil</a></li>
+            <li><a class="dropdown-item" href="{% url 'utilisateurs:mot_de_passe' %}"><i class="bi bi-key me-2"></i>Changer le mot de passe</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li>
+              <form method="post" action="{% url 'utilisateurs:deconnexion' %}" class="px-1">
+                {% csrf_token %}
+                <button type="submit" class="dropdown-item text-danger"><i class="bi bi-box-arrow-right me-2"></i>Se déconnecter</button>
+              </form>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </header>
+
+    <main class="content">
+      {% include "includes/messages.html" %}
+      {% block contenu %}{% endblock %}
+    </main>
+
+    <footer class="app-footer d-flex flex-wrap justify-content-between gap-2">
+      <span>{{ pharmacie.nom }} · {{ pharmacie.telephone }}</span>
+      <span>PharmaGest · Gestion pharmaceutique</span>
+    </footer>
+  </div>
+</div>
+<script src="{% static 'vendor/bootstrap.bundle.min.js' %}"></script>
+<script src="{% static 'js/app.js' %}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>
