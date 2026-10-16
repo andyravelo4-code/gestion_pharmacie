@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block titre %}Utilisateurs{% endblock %}
+{% block titre_page %}Utilisateurs et permissions{% endblock %}
+{% block sous_titre_page %}<div class="sub">Comptes, rôles cumulables et statut d'activation</div>{% endblock %}
+
+{% block contenu %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <div>
+    <h2 class="page-title">Comptes utilisateurs</h2>
+    <div class="page-subtitle">{{ page_obj.paginator.count }} compte{{ page_obj.paginator.count|pluralize }} enregistré{{ page_obj.paginator.count|pluralize }}</div>
+  </div>
+  <a href="{% url 'utilisateurs:creer' %}" class="btn btn-primary"><i class="bi bi-person-plus me-1"></i>Nouvel utilisateur</a>
+</div>
+
+<form method="get" class="search-bar mb-3">
+  <div class="row g-2 align-items-end">
+    <div class="col-lg-4">
+      <label class="filter-label">Recherche</label>
+      <input type="search" name="q" value="{{ q }}" class="form-control" placeholder="Nom, identifiant, e-mail, téléphone">
+    </div>
+    <div class="col-lg-3">
+      <label class="filter-label">Rôle</label>
+      <select name="role" class="form-select">
+        <option value="">Tous les rôles</option>
+        {% for role in roles %}
+          <option value="{{ role.code }}" {% if role.code == role_selectionne %}selected{% endif %}>{{ role.nom }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-lg-3">
+      <label class="filter-label">Statut</label>
+      <select name="statut" class="form-select">
+        <option value="">Tous</option>
+        <option value="actif" {% if statut_selectionne == 'actif' %}selected{% endif %}>Actif</option>
+        <option value="inactif" {% if statut_selectionne == 'inactif' %}selected{% endif %}>Désactivé</option>
+      </select>
+    </div>
+    <div class="col-lg-2 d-flex gap-2">
+      <button class="btn btn-primary flex-grow-1" type="submit"><i class="bi bi-search me-1"></i>Filtrer</button>
+      <a href="{% url 'utilisateurs:liste' %}" class="btn btn-light" title="Réinitialiser"><i class="bi bi-arrow-counterclockwise"></i></a>
+    </div>
+  </div>
+</form>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead>
+        <tr>
+          <th>Utilisateur</th>
+          <th>Rôles</th>
+          <th>Statut</th>
+          <th>Dernière connexion</th>
+          <th>Créé le</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for compte in utilisateurs %}
+        <tr>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <span class="avatar">{{ compte.nom_complet|slice:":1"|upper }}</span>
+              <div>
+                <a href="{% url 'utilisateurs:detail' compte.pk %}" class="fw-semibold">{{ compte.nom_complet }}</a>
+                <div class="text-muted-sm">{{ compte.username }}{% if compte.email %} · {{ compte.email }}{% endif %}</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            {% for role in compte.roles.all %}
+              <span class="badge badge-info-doux me-1">{{ role.nom }}</span>
+            {% empty %}
+              <span class="text-muted small">Aucun rôle</span>
+            {% endfor %}
+            {% if compte.is_superuser %}<span class="badge badge-actif">Superutilisateur</span>{% endif %}
+          </td>
+          <td>
+            {% if compte.is_active %}
+              <span class="badge badge-actif"><i class="bi bi-check-circle me-1"></i>Actif</span>
+            {% else %}
+              <span class="badge badge-danger-doux"><i class="bi bi-slash-circle me-1"></i>Désactivé</span>
+            {% endif %}
+          </td>
+          <td class="text-muted-sm">{{ compte.last_login|date:"d/m/Y H:i"|default:"Jamais" }}</td>
+          <td class="text-muted-sm">{{ compte.date_creation|date:"d/m/Y" }}</td>
+          <td class="text-end table-actions">
+            <a href="{% url 'utilisateurs:detail' compte.pk %}" class="btn btn-sm btn-light" title="Consulter"><i class="bi bi-eye"></i></a>
+            <a href="{% url 'utilisateurs:modifier' compte.pk %}" class="btn btn-sm btn-outline-primary" title="Modifier"><i class="bi bi-pencil"></i></a>
+            {% if compte.pk != user.pk %}
+            <form method="post" action="{% url 'utilisateurs:basculer' compte.pk %}" class="d-inline">
+              {% csrf_token %}
+              <button class="btn btn-sm {% if compte.is_active %}btn-outline-danger{% else %}btn-outline-success{% endif %}"
+                      data-confirm="{% if compte.is_active %}Désactiver{% else %}Réactiver{% endif %} le compte {{ compte.username }} ?"
+                      title="{% if compte.is_active %}Désactiver{% else %}Activer{% endif %}">
+                <i class="bi {% if compte.is_active %}bi-person-slash{% else %}bi-person-check{% endif %}"></i>
+              </button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="text-center py-5 text-muted"><i class="bi bi-person-x d-block fs-3 mb-2"></i>Aucun utilisateur ne correspond aux critères.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% include "includes/pagination.html" %}
+{% endblock %}

@@ -1,0 +1,34 @@
+{% extends "registration/base_auth.html" %}
+{% block titre %}Connexion{% endblock %}
+{% block contenu %}
+<h2 class="h3 fw-bold mb-1">Connexion</h2>
+<p class="text-muted mb-4">Accédez à votre espace de gestion.</p>
+
+{% if form.non_field_errors %}
+  <div class="alert alert-danger py-2">
+    {% for erreur in form.non_field_errors %}<div>{{ erreur }}</div>{% endfor %}
+  </div>
+{% endif %}
+
+<form method="post" novalidate data-submit-once>
+  {% csrf_token %}
+  {% include "includes/form_field.html" with field=form.username %}
+  {% include "includes/form_field.html" with field=form.password %}
+  {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+  <button type="submit" class="btn btn-primary w-100 py-2 mt-2">
+    <i class="bi bi-box-arrow-in-right me-1"></i>Se connecter
+  </button>
+</form>
+
+<div class="d-flex justify-content-between align-items-center mt-3">
+  <a href="{% url 'utilisateurs:reinitialiser_mot_de_passe' %}" class="small">Mot de passe oublié ?</a>
+</div>
+
+{% if debug %}
+<div class="auth-demo mt-4">
+  <div class="fw-semibold mb-1"><i class="bi bi-info-circle me-1"></i>Comptes de démonstration</div>
+  <div>admin / PharmaGest2026!</div>
+  <div>pharmacien · stock · caissier · gestion — même mot de passe</div>
+</div>
+{% endif %}
+{% endblock %}
