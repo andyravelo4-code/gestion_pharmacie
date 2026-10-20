@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block titre %}Médicaments{% endblock %}
+{% block titre_page %}Catalogue des médicaments{% endblock %}
+{% block sous_titre_page %}<div class="sub">Recherche, disponibilités et alertes de stock</div>{% endblock %}
+
+{% block contenu %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <div>
+    <h2 class="page-title">Médicaments</h2>
+    <div class="page-subtitle">{{ page_obj.paginator.count|default:0 }} fiche{{ page_obj.paginator.count|default:0|pluralize }} au catalogue</div>
+  </div>
+  {% if peut_medicaments %}
+  <div class="d-flex gap-2">
+    <a href="{% url 'medicaments:categories' %}" class="btn btn-light btn-sm">
+      <i class="bi bi-tags me-1"></i>Catégories
+    </a>
+    <a href="{% url 'medicaments:creer' %}" class="btn btn-primary btn-sm">
+      <i class="bi bi-plus-lg me-1"></i>Nouveau médicament
+    </a>
+  </div>
+  {% endif %}
+</div>
+
+<form method="get" class="search-bar mb-3">
+  <div class="row g-2 align-items-end">
+    <div class="col-12 col-lg-4">
+      <label class="filter-label" for="q">Recherche</label>
+      <input type="search" class="form-control" id="q" name="q" value="{{ recherche }}"
+             placeholder="Nom, DCI, code-barres, laboratoire">
+    </div>
+    <div class="col-6 col-md-3 col-lg-2">
+      <label class="filter-label" for="categorie">Catégorie</label>
+      <select class="form-select" id="categorie" name="categorie">
+        <option value="">Toutes</option>
+        {% for categorie in categories %}
+        <option value="{{ categorie.pk }}" {% if categorie_selectionnee == categorie.pk|stringformat:"s" %}selected{% endif %}>{{ categorie.nom }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-6 col-md-3 col-lg-2">
+      <label class="filter-label" for="statut">Statut</label>
+      <select class="form-select" id="statut" name="statut">
+        <option value="">Tous</option>
+        <option value="ACTIF" {% if statut_selectionne == "ACTIF" %}selected{% endif %}>Actifs</option>
+        <option value="ARCHIVE" {% if statut_selectionne == "ARCHIVE" %}selected{% endif %}>Archivés</option>
+      </select>
+    </div>
+    <div class="col-6 col-md-3 col-lg-2">
+      <label class="filter-label" for="tri">Tri</label>
+      <select class="form-select" id="tri" name="tri">
+        {% for valeur, libelle in tris %}
+        <option value="{{ valeur }}" {% if tri_selectionne == valeur %}selected{% endif %}>{{ libelle }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-12 col-md-3 col-lg-2 d-flex flex-column gap-1">
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" value="1" id="alerte" name="alerte" {% if alerte_selectionnee %}checked{% endif %}>
+        <label class="form-check-label small" for="alerte">Stock en alerte</label>
+      </div>
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" value="1" id="rupture" name="rupture" {% if rupture_selectionnee %}checked{% endif %}>
+        <label class="form-check-label small" for="rupture">En rupture</label>
+      </div>
+    </div>
+  </div>
+  <div class="d-flex flex-wrap gap-2 mt-3">
+    <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-search me-1"></i>Filtrer</button>
+    <a href="{% url 'medicaments:liste' %}" class="btn btn-light btn-sm"><i class="bi bi-arrow-counterclockwise me-1"></i>Réinitialiser</a>
+  </div>
+</form>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead>
+        <tr>
+          <th>Médicament</th>
+          <th>Catégorie</th>
+          <th class="text-end">Prix de vente</th>
+          <th class="text-end">Stock disponible</th>
+          <th class="text-end">Seuil</th>
+          <th>État</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for medicament in medicaments %}
+        <tr>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              {% if medicament.photo %}
+              <img src="{{ medicament.photo.url }}" alt="{{ medicament.nom }}" class="med-photo">
+              {% else %}
+              <div class="med-photo-placeholder"><i class="bi bi-capsule"></i></div>
+              {% endif %}
+              <div class="min-w-0">
+                <a href="{{ medicament.get_absolute_url }}" class="fw-semibold">{{ medicament.nom }}</a>
+                <div class="text-muted-sm">
+                  {{ medicament.dosage }}{% if medicament.forme %} · {{ medicament.forme }}{% endif %}
+                  {% if medicament.denomination_generique %}<br>{{ medicament.denomination_generique }}{% endif %}
+                </div>
+              </div>
+            </div>
+          </td>
+          <td><span class="badge badge-info-doux badge-statut">{{ medicament.categorie.nom }}</span></td>
+          <td class="text-end mono fw-semibold">{{ medicament.prix_vente|montant }} {{ devise }}</td>
+          <td class="text-end mono">{{ medicament.stock_disponible_annote }}</td>
+          <td class="text-end mono text-muted">{{ medicament.seuil_alerte }}</td>
+          <td>
+            {% if medicament.statut == "ARCHIVE" %}
+            <span class="badge badge-archive badge-statut">Archivé</span>
+            {% elif medicament.stock_disponible_annote <= 0 %}
+            <span class="badge badge-danger-doux badge-statut">Rupture</span>
+            {% elif medicament.stock_disponible_annote <= medicament.seuil_alerte %}
+            <span class="badge badge-warning-doux badge-statut">Alerte stock</span>
+            {% else %}
+            <span class="badge badge-actif badge-statut">Disponible</span>
+            {% endif %}
+          </td>
+          <td class="text-end table-actions">
+            <a href="{{ medicament.get_absolute_url }}" class="btn btn-sm btn-light" title="Consulter">
+              <i class="bi bi-eye"></i>
+            </a>
+            {% if peut_medicaments %}
+            <a href="{% url 'medicaments:modifier' medicament.pk %}" class="btn btn-sm btn-light" title="Modifier">
+              <i class="bi bi-pencil"></i>
+            </a>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7">
+            <div class="empty-state">
+              <i class="bi bi-capsule"></i>
+              <p class="mb-1">Aucun médicament ne correspond à votre recherche.</p>
+              {% if peut_medicaments %}
+              <a href="{% url 'medicaments:creer' %}" class="btn btn-sm btn-primary mt-2">
+                <i class="bi bi-plus-lg me-1"></i>Créer un médicament
+              </a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-body pt-0">
+    {% include "includes/pagination.html" %}
+  </div>
+</div>
+{% endblock %}

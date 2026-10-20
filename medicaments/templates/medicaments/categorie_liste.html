@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block titre %}Catégories{% endblock %}
+{% block titre_page %}Catégories de médicaments{% endblock %}
+{% block sous_titre_page %}<div class="sub">Classement du catalogue et contrôle des suppressions</div>{% endblock %}
+
+{% block contenu %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <div>
+    <h2 class="page-title">Catégories</h2>
+    <div class="page-subtitle">{{ page_obj.paginator.count|default:0 }} catégorie{{ page_obj.paginator.count|default:0|pluralize }}</div>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{% url 'medicaments:liste' %}" class="btn btn-light btn-sm"><i class="bi bi-capsule me-1"></i>Médicaments</a>
+    <a href="{% url 'medicaments:categorie_creer' %}" class="btn btn-primary btn-sm">
+      <i class="bi bi-plus-lg me-1"></i>Nouvelle catégorie
+    </a>
+  </div>
+</div>
+
+<form method="get" class="search-bar mb-3">
+  <div class="row g-2 align-items-end">
+    <div class="col-md-6">
+      <label class="filter-label" for="q">Recherche par nom</label>
+      <input type="search" class="form-control" id="q" name="q" value="{{ recherche }}" placeholder="Nom de la catégorie">
+    </div>
+    <div class="col-md-6 d-flex gap-2">
+      <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-search me-1"></i>Rechercher</button>
+      <a href="{% url 'medicaments:categories' %}" class="btn btn-light btn-sm">Réinitialiser</a>
+    </div>
+  </div>
+</form>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead>
+        <tr>
+          <th>Nom</th>
+          <th>Description</th>
+          <th class="text-end">Médicaments</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for categorie in categories %}
+        <tr>
+          <td class="fw-semibold">{{ categorie.nom }}</td>
+          <td class="text-muted small">{{ categorie.description|default:"—"|truncatechars:90 }}</td>
+          <td class="text-end">
+            <span class="badge {% if categorie.nombre_medicaments_annote %}badge-info-doux{% else %}badge-archive{% endif %} badge-statut">
+              {{ categorie.nombre_medicaments_annote }}
+            </span>
+          </td>
+          <td class="text-end table-actions">
+            <a href="{% url 'medicaments:categorie_modifier' categorie.pk %}" class="btn btn-sm btn-light" title="Modifier">
+              <i class="bi bi-pencil"></i>
+            </a>
+            <a href="{% url 'medicaments:categorie_supprimer' categorie.pk %}" class="btn btn-sm btn-light text-danger" title="Supprimer">
+              <i class="bi bi-trash"></i>
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="4">
+            <div class="empty-state">
+              <i class="bi bi-tags"></i>
+              <p class="mb-1">Aucune catégorie enregistrée.</p>
+              <a href="{% url 'medicaments:categorie_creer' %}" class="btn btn-sm btn-primary mt-2">
+                <i class="bi bi-plus-lg me-1"></i>Créer une catégorie
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-body pt-0">
+    {% include "includes/pagination.html" %}
+  </div>
+</div>
+{% endblock %}

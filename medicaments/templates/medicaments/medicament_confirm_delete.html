@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block titre %}Supprimer {{ medicament.nom }}{% endblock %}
+{% block titre_page %}Suppression d'un médicament{% endblock %}
+{% block sous_titre_page %}<div class="sub">Opération définitive ou archivage selon l'historique</div>{% endblock %}
+
+{% block contenu %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card border-danger">
+      <div class="card-header text-danger"><i class="bi bi-exclamation-triangle me-2"></i>Confirmation de suppression</div>
+      <div class="card-body">
+        <div class="d-flex align-items-center gap-3 mb-3">
+          {% if medicament.photo %}
+          <img src="{{ medicament.photo.url }}" alt="{{ medicament.nom }}" class="med-photo">
+          {% else %}
+          <div class="med-photo-placeholder"><i class="bi bi-capsule"></i></div>
+          {% endif %}
+          <div>
+            <div class="fw-semibold">{{ medicament.nom }} {{ medicament.dosage }}</div>
+            <div class="text-muted small">{{ medicament.categorie.nom }} · {{ medicament.prix_vente|montant }} {{ devise }}</div>
+          </div>
+        </div>
+
+        {% if historique_sensible %}
+        <div class="alert alert-warning">
+          <i class="bi bi-info-circle me-2"></i>
+          Ce médicament est référencé dans des lots, mouvements, achats ou ventes passés.
+          Il <strong>ne sera pas supprimé</strong> : il sera <strong>archivé</strong> afin de préserver
+          l'historique et la traçabilité (RG09/RG10).
+        </div>
+        {% else %}
+        <div class="alert alert-danger">
+          <i class="bi bi-exclamation-octagon me-2"></i>
+          Ce médicament n'a aucun historique. Sa suppression est <strong>définitive</strong> et
+          irréversible. Vérifiez qu'il ne s'agit pas d'une erreur de saisie.
+        </div>
+        {% endif %}
+
+        <form method="post">
+          {% csrf_token %}
+          <div class="d-flex flex-wrap justify-content-end gap-2">
+            <a href="{% url 'medicaments:detail' medicament.pk %}" class="btn btn-light">Annuler</a>
+            <button type="submit" class="btn btn-danger"
+                    data-confirm="{% if historique_sensible %}Confirmer l'archivage de ce médicament ?{% else %}Confirmer la suppression définitive de ce médicament ?{% endif %}">
+              <i class="bi {% if historique_sensible %}bi-archive{% else %}bi-trash{% endif %} me-1"></i>
+              {% if historique_sensible %}Archiver{% else %}Supprimer définitivement{% endif %}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block titre %}Supprimer {{ categorie.nom }}{% endblock %}
+{% block titre_page %}Suppression d'une catégorie{% endblock %}
+{% block sous_titre_page %}<div class="sub">La suppression est refusée si des médicaments l'utilisent</div>{% endblock %}
+
+{% block contenu %}
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <div class="card border-danger">
+      <div class="card-header text-danger"><i class="bi bi-exclamation-triangle me-2"></i>Confirmation de suppression</div>
+      <div class="card-body">
+        <p>Vous allez supprimer la catégorie <strong>{{ categorie.nom }}</strong>.</p>
+
+        {% if suppression_possible %}
+        <div class="alert alert-danger">
+          <i class="bi bi-exclamation-octagon me-2"></i>
+          Aucun médicament n'utilise cette catégorie. La suppression est définitive.
+        </div>
+        {% else %}
+        <div class="alert alert-warning">
+          <i class="bi bi-shield-exclamation me-2"></i>
+          <strong>Suppression impossible :</strong> {{ nombre_medicaments }} médicament{{ nombre_medicaments|pluralize }}
+          utilise{{ nombre_medicaments|pluralize:"nt" }} cette catégorie. Modifiez d'abord
+          {{ nombre_medicaments|pluralize:"ces fiches, cette fiche" }}.
+        </div>
+        {% endif %}
+
+        <form method="post">
+          {% csrf_token %}
+          <div class="d-flex flex-wrap justify-content-end gap-2">
+            <a href="{% url 'medicaments:categories' %}" class="btn btn-light">Retour</a>
+            <button type="submit" class="btn btn-danger" {% if not suppression_possible %}disabled{% endif %}
+                    data-confirm="Confirmer la suppression définitive de cette catégorie ?">
+              <i class="bi bi-trash me-1"></i>Supprimer
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

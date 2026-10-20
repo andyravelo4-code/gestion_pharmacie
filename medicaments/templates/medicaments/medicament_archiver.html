@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block titre %}{% if va_archiver %}Archiver{% else %}Réactiver{% endif %} {{ medicament.nom }}{% endblock %}
+{% block titre_page %}{% if va_archiver %}Archivage d'un médicament{% else %}Réactivation d'un médicament{% endif %}{% endblock %}
+{% block sous_titre_page %}<div class="sub">Le médicament et son historique sont conservés</div>{% endblock %}
+
+{% block contenu %}
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-header">
+        <i class="bi {% if va_archiver %}bi-archive{% else %}bi-arrow-counterclockwise{% endif %} me-2"></i>
+        {% if va_archiver %}Confirmer l'archivage{% else %}Confirmer la réactivation{% endif %}
+      </div>
+      <div class="card-body">
+        <div class="d-flex align-items-center gap-3 mb-3">
+          {% if medicament.photo %}
+          <img src="{{ medicament.photo.url }}" alt="{{ medicament.nom }}" class="med-photo">
+          {% else %}
+          <div class="med-photo-placeholder"><i class="bi bi-capsule"></i></div>
+          {% endif %}
+          <div>
+            <div class="fw-semibold">{{ medicament.nom }} {{ medicament.dosage }}</div>
+            <div class="text-muted small">{{ medicament.categorie.nom }} · {{ medicament.prix_vente|montant }} {{ devise }}</div>
+          </div>
+        </div>
+
+        {% if va_archiver %}
+        <div class="alert alert-warning">
+          <i class="bi bi-info-circle me-2"></i>
+          Le médicament sera marqué <strong>archivé</strong> : il restera consultable et lié à
+          son historique, mais ne sera plus vendu. Aucune donnée n'est effacée.
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+          <i class="bi bi-info-circle me-2"></i>
+          Le médicament redeviendra <strong>actif</strong> et pourra à nouveau être vendu
+          selon la disponibilité de ses lots.
+        </div>
+        {% endif %}
+
+        <form method="post">
+          {% csrf_token %}
+          <div class="d-flex flex-wrap justify-content-end gap-2">
+            <a href="{% url 'medicaments:detail' medicament.pk %}" class="btn btn-light">Annuler</a>
+            <button type="submit" class="btn {% if va_archiver %}btn-warning{% else %}btn-primary{% endif %}"
+                    data-confirm="{% if va_archiver %}Confirmer l'archivage de ce médicament ?{% else %}Confirmer la réactivation de ce médicament ?{% endif %}">
+              <i class="bi {% if va_archiver %}bi-archive{% else %}bi-arrow-counterclockwise{% endif %} me-1"></i>
+              {% if va_archiver %}Archiver{% else %}Réactiver{% endif %}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

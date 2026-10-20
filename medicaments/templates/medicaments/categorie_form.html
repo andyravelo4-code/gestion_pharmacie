@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block titre %}{{ titre_formulaire }}{% endblock %}
+{% block titre_page %}{{ titre_formulaire }}{% endblock %}
+{% block sous_titre_page %}<div class="sub">Le nom doit être unique</div>{% endblock %}
+
+{% block contenu %}
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-tags me-2"></i>{{ titre_formulaire }}</div>
+      <div class="card-body">
+        <form method="post" novalidate>
+          {% csrf_token %}
+          {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+          {% include "includes/form_field.html" with field=form.nom %}
+          {% include "includes/form_field.html" with field=form.description %}
+          <div class="d-flex flex-wrap justify-content-end gap-2">
+            <a href="{% url 'medicaments:categories' %}" class="btn btn-light">Annuler</a>
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-check-lg me-1"></i>{{ bouton_libelle }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

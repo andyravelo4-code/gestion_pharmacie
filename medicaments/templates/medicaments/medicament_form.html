@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block titre %}{{ titre_formulaire }}{% endblock %}
+{% block titre_page %}{{ titre_formulaire }}{% endblock %}
+{% block sous_titre_page %}<div class="sub">Les champs marqués d'un astérisque sont obligatoires</div>{% endblock %}
+
+{% block contenu %}
+<div class="row justify-content-center">
+  <div class="col-xl-10">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-capsule me-2"></i>{{ titre_formulaire }}</div>
+      <div class="card-body">
+        <form method="post" enctype="multipart/form-data" novalidate>
+          {% csrf_token %}
+          {% if form.non_field_errors %}
+          <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+          {% endif %}
+          <div class="row">
+            <div class="col-md-8">{% include "includes/form_field.html" with field=form.nom %}</div>
+            <div class="col-md-4">{% include "includes/form_field.html" with field=form.categorie %}</div>
+            <div class="col-md-6">{% include "includes/form_field.html" with field=form.denomination_generique %}</div>
+            <div class="col-md-3">{% include "includes/form_field.html" with field=form.forme %}</div>
+            <div class="col-md-3">{% include "includes/form_field.html" with field=form.dosage %}</div>
+            <div class="col-md-6">{% include "includes/form_field.html" with field=form.laboratoire %}</div>
+            <div class="col-md-6">{% include "includes/form_field.html" with field=form.code_barres %}</div>
+            <div class="col-md-4">{% include "includes/form_field.html" with field=form.prix_achat %}</div>
+            <div class="col-md-4">{% include "includes/form_field.html" with field=form.prix_vente %}</div>
+            <div class="col-md-4">{% include "includes/form_field.html" with field=form.seuil_alerte %}</div>
+            <div class="col-md-8">{% include "includes/form_field.html" with field=form.photo %}</div>
+            <div class="col-md-4 d-flex align-items-end pb-3">
+              {% if form.instance.photo %}
+              <div class="text-muted small">
+                <i class="bi bi-image me-1"></i>Photo actuelle :
+                <a href="{{ form.instance.photo.url }}" target="_blank" rel="noopener">voir l'image</a>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+          <div class="d-flex flex-wrap justify-content-end gap-2 mt-3">
+            <a href="{% if form.instance.pk %}{% url 'medicaments:detail' form.instance.pk %}{% else %}{% url 'medicaments:liste' %}{% endif %}" class="btn btn-light">Annuler</a>
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-check-lg me-1"></i>{{ bouton_libelle }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
