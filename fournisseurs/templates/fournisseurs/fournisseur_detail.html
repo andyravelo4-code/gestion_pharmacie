@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block titre %}{{ fournisseur.nom }}{% endblock %}
+{% block titre_page %}Fiche fournisseur{% endblock %}
+{% block sous_titre_page %}<div class="sub">Coordonnées et historique des commandes</div>{% endblock %}
+
+{% block contenu %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <div>
+    <a href="{% url 'fournisseurs:liste' %}" class="text-muted small"><i class="bi bi-arrow-left me-1"></i>Retour aux fournisseurs</a>
+    <h2 class="page-title mt-1">{{ fournisseur.nom }}</h2>
+    <div class="page-subtitle">
+      {% if fournisseur.actif %}
+      <span class="badge badge-actif badge-statut">Actif</span>
+      {% else %}
+      <span class="badge badge-archive badge-statut">Inactif</span>
+      {% endif %}
+    </div>
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    <a href="{% url 'fournisseurs:modifier' fournisseur.pk %}" class="btn btn-primary btn-sm">
+      <i class="bi bi-pencil me-1"></i>Modifier
+    </a>
+    <form method="post" action="{% url 'fournisseurs:basculer' fournisseur.pk %}" class="d-inline">
+      {% csrf_token %}
+      <button type="submit" class="btn {% if fournisseur.actif %}btn-outline-danger{% else %}btn-outline-primary{% endif %} btn-sm"
+              data-confirm="{% if fournisseur.actif %}Confirmer la désactivation de ce fournisseur ? Son historique sera conservé.{% else %}Confirmer la réactivation de ce fournisseur ?{% endif %}">
+        <i class="bi {% if fournisseur.actif %}bi-pause-circle{% else %}bi-play-circle{% endif %} me-1"></i>
+        {% if fournisseur.actif %}Désactiver{% else %}Réactiver{% endif %}
+      </button>
+    </form>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-4">
+    <div class="card mb-4">
+      <div class="card-header"><i class="bi bi-building me-2"></i>Coordonnées</div>
+      <div class="card-body">
+        <div class="detail-label">Raison sociale</div>
+        <div class="detail-value">{{ fournisseur.nom }}</div>
+        <div class="detail-label">Adresse</div>
+        <div class="detail-value">{{ fournisseur.adresse|default:"—" }}</div>
+        <div class="detail-label">Téléphone</div>
+        <div class="detail-value mono">{{ fournisseur.telephone|default:"—" }}</div>
+        <div class="detail-label">E-mail</div>
+        <div class="detail-value">{{ fournisseur.email|default:"—" }}</div>
+        <div class="detail-label">NIF / identifiant professionnel</div>
+        <div class="detail-value mono">{{ fournisseur.numero_fiscal|default:"—" }}</div>
+        <div class="detail-label">Contact principal</div>
+        <div class="detail-value">{{ fournisseur.contact_principal|default:"—" }}</div>
+        <div class="detail-label">Créé le</div>
+        <div class="detail-value">{{ fournisseur.date_creation|date:"d/m/Y" }}</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><i class="bi bi-bar-chart me-2"></i>Synthèse</div>
+      <div class="card-body">
+        <div class="summary-row"><span class="text-muted">Commandes</span><span class="mono fw-semibold">{{ nombre_commandes }}</span></div>
+        <div class="summary-row"><span class="text-muted">Total des achats</span><span class="mono fw-semibold">{{ total_achats|montant }} {{ devise }}</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="card mb-4">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-cart-plus me-2"></i>Historique des commandes</span>
+        <span class="text-muted small">{{ nombre_commandes }} commande{{ nombre_commandes|pluralize }}</span>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead>
+            <tr>
+              <th>Numéro</th>
+              <th>Date</th>
+              <th>Statut</th>
+              <th class="text-end">Montant total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for commande in commandes %}
+            <tr>
+              <td class="mono fw-semibold">{{ commande.numero }}</td>
+              <td>{{ commande.date_creation|date:"d/m/Y H:i" }}</td>
+              <td>
+                {% if commande.statut == "RECEPTIONNEE" %}
+                <span class="badge badge-actif badge-statut">{{ commande.get_statut_display }}</span>
+                {% elif commande.statut == "ANNULEE" %}
+                <span class="badge badge-archive badge-statut">{{ commande.get_statut_display }}</span>
+                {% elif commande.statut == "BROUILLON" %}
+                <span class="badge badge-archive badge-statut">{{ commande.get_statut_display }}</span>
+                {% else %}
+                <span class="badge badge-warning-doux badge-statut">{{ commande.get_statut_display }}</span>
+                {% endif %}
+              </td>
+              <td class="text-end mono">{{ commande.montant_total|montant }} {{ devise }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="text-center text-muted py-3">Aucune commande pour ce fournisseur.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><i class="bi bi-layers me-2"></i>Lots associés</div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead>
+            <tr>
+              <th>Médicament</th>
+              <th>Lot</th>
+              <th>Péremption</th>
+              <th class="text-end">Quantité</th>
+              <th>État</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for lot in lots %}
+            <tr>
+              <td>{{ lot.medicament.nom }}</td>
+              <td class="mono">{{ lot.numero_lot }}</td>
+              <td>{{ lot.date_peremption|date:"d/m/Y" }}</td>
+              <td class="text-end mono">{{ lot.quantite }}</td>
+              <td>
+                {% if lot.est_perime %}
+                <span class="badge badge-danger-doux badge-statut">Périmé</span>
+                {% elif lot.bloque %}
+                <span class="badge badge-warning-doux badge-statut">Bloqué</span>
+                {% elif lot.est_delivrable %}
+                <span class="badge badge-actif badge-statut">Délivrable</span>
+                {% else %}
+                <span class="badge badge-archive badge-statut">Épuisé</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="text-center text-muted py-3">Aucun lot associé à ce fournisseur.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
