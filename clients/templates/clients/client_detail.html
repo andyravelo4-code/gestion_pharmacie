@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block titre %}{{ client.nom_affichage }}{% endblock %}
+{% block titre_page %}Fiche client{% endblock %}
+{% block sous_titre_page %}<div class="sub">Coordonnées et historique des ventes</div>{% endblock %}
+
+{% block contenu %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <div>
+    <a href="{% url 'clients:liste' %}" class="text-muted small"><i class="bi bi-arrow-left me-1"></i>Retour aux clients</a>
+    <h2 class="page-title mt-1">{{ client.nom_affichage }}</h2>
+    <div class="page-subtitle">
+      {% if client.actif %}
+      <span class="badge badge-actif badge-statut">Compte actif</span>
+      {% else %}
+      <span class="badge badge-archive badge-statut">Compte inactif</span>
+      {% endif %}
+    </div>
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    <a href="{% url 'clients:modifier' client.pk %}" class="btn btn-primary btn-sm">
+      <i class="bi bi-pencil me-1"></i>Modifier
+    </a>
+    <form method="post" action="{% url 'clients:basculer' client.pk %}" class="d-inline">
+      {% csrf_token %}
+      <button type="submit" class="btn {% if client.actif %}btn-outline-danger{% else %}btn-outline-primary{% endif %} btn-sm"
+              data-confirm="{% if client.actif %}Confirmer la désactivation de ce compte client ? Son historique sera conservé.{% else %}Confirmer la réactivation de ce compte client ?{% endif %}">
+        <i class="bi {% if client.actif %}bi-person-dash{% else %}bi-person-check{% endif %} me-1"></i>
+        {% if client.actif %}Désactiver{% else %}Réactiver{% endif %}
+      </button>
+    </form>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-4">
+    <div class="card mb-4">
+      <div class="card-header"><i class="bi bi-person me-2"></i>Coordonnées</div>
+      <div class="card-body">
+        <div class="detail-label">Nom</div>
+        <div class="detail-value">{{ client.nom|default:"Client non identifié" }}</div>
+        <div class="detail-label">Téléphone</div>
+        <div class="detail-value mono">{{ client.telephone|default:"—" }}</div>
+        <div class="detail-label">E-mail</div>
+        <div class="detail-value">{{ client.email|default:"—" }}</div>
+        <div class="detail-label">Adresse</div>
+        <div class="detail-value">{{ client.adresse|default:"—" }}</div>
+        <div class="detail-label">Notes</div>
+        <div class="detail-value">{{ client.notes|default:"—" }}</div>
+        <div class="detail-label">Compte créé le</div>
+        <div class="detail-value">{{ client.date_creation|date:"d/m/Y" }}</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><i class="bi bi-bar-chart me-2"></i>Synthèse</div>
+      <div class="card-body">
+        <div class="summary-row"><span class="text-muted">Nombre de ventes</span><span class="mono fw-semibold">{{ nombre_ventes }}</span></div>
+        <div class="summary-row"><span class="text-muted">Total acheté</span><span class="mono fw-semibold">{{ total_achete|montant }} {{ devise }}</span></div>
+        <div class="text-muted small mt-2">Le total acheté ne prend en compte que les ventes validées.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-receipt me-2"></i>Historique des ventes</span>
+        <span class="text-muted small">{{ nombre_ventes }} vente{{ nombre_ventes|pluralize }}</span>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead>
+            <tr>
+              <th>Numéro</th>
+              <th>Date</th>
+              <th class="text-end">Total</th>
+              <th>Statut</th>
+              <th class="text-end">Détail</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for vente in ventes %}
+            <tr>
+              <td class="mono fw-semibold">{{ vente.numero }}</td>
+              <td>{{ vente.date_vente|date:"d/m/Y H:i" }}</td>
+              <td class="text-end mono">{{ vente.montant_total|montant }} {{ devise }}</td>
+              <td>
+                {% if vente.statut == "VALIDEE" %}
+                <span class="badge badge-actif badge-statut">Validée</span>
+                {% else %}
+                <span class="badge badge-danger-doux badge-statut">Annulée</span>
+                {% endif %}
+              </td>
+              <td class="text-end">
+                <a href="{% url 'ventes:detail' vente.pk %}" class="btn btn-sm btn-light" title="Consulter la vente">
+                  <i class="bi bi-eye"></i>
+                </a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="text-center text-muted py-3">Aucune vente enregistrée pour ce client.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

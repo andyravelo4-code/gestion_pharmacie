@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block titre %}Clients{% endblock %}
+{% block titre_page %}Clients{% endblock %}
+{% block sous_titre_page %}<div class="sub">Comptes clients et historique commercial</div>{% endblock %}
+
+{% block contenu %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <div>
+    <h2 class="page-title">Clients</h2>
+    <div class="page-subtitle">{{ page_obj.paginator.count|default:0 }} client{{ page_obj.paginator.count|default:0|pluralize }}</div>
+  </div>
+  <a href="{% url 'clients:creer' %}" class="btn btn-primary btn-sm">
+    <i class="bi bi-plus-lg me-1"></i>Nouveau client
+  </a>
+</div>
+
+<form method="get" class="search-bar mb-3">
+  <div class="row g-2 align-items-end">
+    <div class="col-md-6">
+      <label class="filter-label" for="q">Recherche</label>
+      <input type="search" class="form-control" id="q" name="q" value="{{ recherche }}" placeholder="Nom, téléphone ou e-mail">
+    </div>
+    <div class="col-md-3">
+      <label class="filter-label" for="actif">Statut</label>
+      <select class="form-select" id="actif" name="actif">
+        <option value="">Tous</option>
+        <option value="1" {% if actif_selectionne == "1" %}selected{% endif %}>Actifs</option>
+        <option value="0" {% if actif_selectionne == "0" %}selected{% endif %}>Inactifs</option>
+      </select>
+    </div>
+    <div class="col-md-3 d-flex gap-2">
+      <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-search me-1"></i>Filtrer</button>
+      <a href="{% url 'clients:liste' %}" class="btn btn-light btn-sm">Réinitialiser</a>
+    </div>
+  </div>
+</form>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead>
+        <tr>
+          <th>Client</th>
+          <th>Téléphone</th>
+          <th>E-mail</th>
+          <th>Adresse</th>
+          <th class="text-end">Ventes</th>
+          <th>Statut</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for client in clients %}
+        <tr>
+          <td><a href="{{ client.get_absolute_url }}" class="fw-semibold">{{ client.nom_affichage }}</a></td>
+          <td class="mono small">{{ client.telephone|default:"—" }}</td>
+          <td class="small">{{ client.email|default:"—" }}</td>
+          <td class="small text-muted">{{ client.adresse|default:"—"|truncatechars:50 }}</td>
+          <td class="text-end mono">{{ client.nombre_ventes_annote }}</td>
+          <td>
+            {% if client.actif %}
+            <span class="badge badge-actif badge-statut">Actif</span>
+            {% else %}
+            <span class="badge badge-archive badge-statut">Inactif</span>
+            {% endif %}
+          </td>
+          <td class="text-end table-actions">
+            <a href="{{ client.get_absolute_url }}" class="btn btn-sm btn-light" title="Consulter"><i class="bi bi-eye"></i></a>
+            <a href="{% url 'clients:modifier' client.pk %}" class="btn btn-sm btn-light" title="Modifier"><i class="bi bi-pencil"></i></a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7">
+            <div class="empty-state">
+              <i class="bi bi-people"></i>
+              <p class="mb-1">Aucun client ne correspond à votre recherche.</p>
+              <a href="{% url 'clients:creer' %}" class="btn btn-sm btn-primary mt-2">
+                <i class="bi bi-plus-lg me-1"></i>Créer un client
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-body pt-0">
+    {% include "includes/pagination.html" %}
+  </div>
+</div>
+{% endblock %}

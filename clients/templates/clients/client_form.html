@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block titre %}{{ titre_formulaire }}{% endblock %}
+{% block titre_page %}{{ titre_formulaire }}{% endblock %}
+{% block sous_titre_page %}<div class="sub">Les données personnelles sont limitées au suivi commercial</div>{% endblock %}
+
+{% block contenu %}
+<div class="row justify-content-center">
+  <div class="col-xl-8">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-person me-2"></i>{{ titre_formulaire }}</div>
+      <div class="card-body">
+        <form method="post" novalidate>
+          {% csrf_token %}
+          {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+          <div class="row">
+            <div class="col-md-6">{% include "includes/form_field.html" with field=form.nom %}</div>
+            <div class="col-md-6">{% include "includes/form_field.html" with field=form.telephone %}</div>
+            <div class="col-md-6">{% include "includes/form_field.html" with field=form.email %}</div>
+            <div class="col-md-6">{% include "includes/form_field.html" with field=form.adresse %}</div>
+            <div class="col-12">{% include "includes/form_field.html" with field=form.notes %}</div>
+          </div>
+          <div class="alert alert-info small mt-2">
+            <i class="bi bi-info-circle me-2"></i>
+            Le statut actif/inactif se gère depuis la fiche du client. Désactiver un compte
+            ne supprime jamais l'historique des ventes.
+          </div>
+          <div class="d-flex flex-wrap justify-content-end gap-2">
+            <a href="{% if form.instance.pk %}{% url 'clients:detail' form.instance.pk %}{% else %}{% url 'clients:liste' %}{% endif %}" class="btn btn-light">Annuler</a>
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-check-lg me-1"></i>{{ bouton_libelle }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
