@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block titre %}Lots{% endblock %}
+{% block titre_page %}Lots et péremptions{% endblock %}
+{% block sous_titre_page %}<div class="sub">Suivi FEFO, blocages et dates de péremption</div>{% endblock %}
+
+{% block contenu %}
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-5">
+        {% include "includes/form_field.html" with field=form.q %}
+      </div>
+      <div class="col-md-3">
+        {% include "includes/form_field.html" with field=form.etat %}
+      </div>
+      <div class="col-md-2">
+        {% include "includes/form_field.html" with field=form.tri %}
+      </div>
+      <div class="col-md-2 d-flex gap-2">
+        <button type="submit" class="btn btn-primary flex-grow-1"><i class="bi bi-search me-1"></i>Filtrer</button>
+        <a href="{% url 'stock:lots' %}" class="btn btn-light" title="Réinitialiser"><i class="bi bi-arrow-counterclockwise"></i></a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <span><i class="bi bi-layers me-2"></i>Lots de stock</span>
+    <span class="text-muted small">{{ page_obj.paginator.count }} lot{{ page_obj.paginator.count|pluralize }}</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Médicament</th>
+          <th>Lot</th>
+          <th>Péremption</th>
+          <th class="text-end">Quantité</th>
+          <th class="text-end">Prix d'achat</th>
+          <th class="text-end">Valeur</th>
+          <th>Fournisseur</th>
+          <th>État</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for lot in page_obj %}
+        <tr>
+          <td>
+            <a href="{% url 'medicaments:detail' lot.medicament_id %}" class="fw-semibold">{{ lot.medicament }}</a>
+          </td>
+          <td class="mono">{{ lot.numero_lot }}</td>
+          <td>
+            {{ lot.date_peremption|date:"d/m/Y" }}
+            <div class="small {% if lot.est_perime %}text-danger{% elif lot.jours_avant_peremption <= seuil_jours %}text-warning{% else %}text-muted{% endif %}">
+              {% if lot.est_perime %}Périmé depuis {{ lot.jours_avant_peremption|cut:"-" }} j{% else %}J-{{ lot.jours_avant_peremption }}{% endif %}
+            </div>
+          </td>
+          <td class="text-end mono fw-semibold">{{ lot.quantite }}</td>
+          <td class="text-end mono">{{ lot.prix_achat|montant }}</td>
+          <td class="text-end mono">{{ lot.valeur_stock|montant }} {{ devise }}</td>
+          <td>{{ lot.fournisseur.nom|default:"—" }}</td>
+          <td>
+            {% if lot.bloque %}
+              <span class="badge badge-statut badge-danger-doux" title="{{ lot.motif_blocage }}">Bloqué</span>
+            {% elif lot.est_perime %}
+              <span class="badge badge-statut badge-danger-doux">Périmé</span>
+            {% elif lot.quantite <= 0 %}
+              <span class="badge badge-statut badge-archive">Épuisé</span>
+            {% elif lot.jours_avant_peremption <= seuil_jours %}
+              <span class="badge badge-statut badge-warning-doux">Proche péremption</span>
+            {% else %}
+              <span class="badge badge-statut badge-actif">Délivrable</span>
+            {% endif %}
+          </td>
+          <td class="text-end table-actions">
+            <a href="{% url 'stock:lot_detail' lot.pk %}" class="btn btn-sm btn-outline-primary" title="Détail du lot"><i class="bi bi-eye"></i></a>
+            {% if lot.bloque %}
+              <form method="post" action="{% url 'stock:bloquer_lot' lot.pk %}" class="d-inline">
+                {% csrf_token %}
+                <input type="hidden" name="suivant" value="{{ request.get_full_path }}">
+                <button type="submit" class="btn btn-sm btn-outline-success" data-confirm="Débloquer ce lot et le rendre de nouveau délivrable ?" title="Débloquer">
+                  <i class="bi bi-unlock"></i>
+                </button>
+              </form>
+            {% else %}
+              <button type="button" class="btn btn-sm btn-outline-danger"
+                      data-bloquer-lot
+                      data-url="{% url 'stock:bloquer_lot' lot.pk %}"
+                      data-libelle="{{ lot.medicament }} — lot {{ lot.numero_lot }}"
+                      title="Bloquer">
+                <i class="bi bi-lock"></i>
+              </button>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="9"><div class="empty-state"><i class="bi bi-layers"></i>Aucun lot ne correspond aux critères.</div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% include "includes/pagination.html" %}
+
+<div class="modal fade" id="modalBloquerLot" tabindex="-1" aria-labelledby="modalBloquerLotLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <form method="post" id="formBloquerLot" action="#">
+      {% csrf_token %}
+      <input type="hidden" name="suivant" value="{{ request.get_full_path }}">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalBloquerLotLabel">Bloquer un lot</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-2 small text-muted" id="lotABloquer"></p>
+          <label class="form-label" for="motifBlocage">Motif du blocage <span class="required-star">*</span></label>
+          <textarea name="motif" id="motifBlocage" rows="3" class="form-control" maxlength="255" required placeholder="Ex. : lot rappelé par le fournisseur, suspicion de non-conformité…"></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
+          <button type="submit" class="btn btn-danger"><i class="bi bi-lock me-1"></i>Bloquer le lot</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  var modalElement = document.getElementById("modalBloquerLot");
+  if (!modalElement || !window.bootstrap) return;
+  var modal = new bootstrap.Modal(modalElement);
+  var formulaire = document.getElementById("formBloquerLot");
+  var libelle = document.getElementById("lotABloquer");
+  document.querySelectorAll("[data-bloquer-lot]").forEach(function (bouton) {
+    bouton.addEventListener("click", function () {
+      formulaire.action = bouton.getAttribute("data-url");
+      libelle.textContent = bouton.getAttribute("data-libelle");
+      document.getElementById("motifBlocage").value = "";
+      modal.show();
+    });
+  });
+});
+</script>
+{% endblock %}

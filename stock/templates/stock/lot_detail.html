@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block titre %}Lot {{ lot.numero_lot }}{% endblock %}
+{% block titre_page %}Lot {{ lot.numero_lot }}{% endblock %}
+{% block sous_titre_page %}<div class="sub">{{ lot.medicament }} · {{ lot.date_peremption|date:"d/m/Y" }}</div>{% endblock %}
+
+{% block contenu %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <a href="{% url 'stock:lots' %}" class="btn btn-light btn-sm"><i class="bi bi-arrow-left me-1"></i>Retour aux lots</a>
+  <div class="d-flex gap-2">
+    <a href="{% url 'medicaments:detail' lot.medicament_id %}" class="btn btn-outline-primary btn-sm"><i class="bi bi-capsule me-1"></i>Fiche médicament</a>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-7">
+    <div class="card mb-4">
+      <div class="card-header"><i class="bi bi-info-circle me-2"></i>Informations du lot</div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-sm-6">
+            <div class="detail-label">Médicament</div>
+            <div class="detail-value">{{ lot.medicament }}</div>
+            <div class="detail-label">Numéro de lot</div>
+            <div class="detail-value mono">{{ lot.numero_lot }}</div>
+            <div class="detail-label">Date de péremption</div>
+            <div class="detail-value">
+              {{ lot.date_peremption|date:"d/m/Y" }}
+              {% if lot.est_perime %}
+                <span class="badge badge-statut badge-danger-doux ms-1">Périmé ({{ lot.jours_avant_peremption }} j)</span>
+              {% else %}
+                <span class="text-muted small ms-1">J-{{ lot.jours_avant_peremption }}</span>
+              {% endif %}
+            </div>
+            <div class="detail-label">Fournisseur</div>
+            <div class="detail-value">{{ lot.fournisseur.nom|default:"—" }}</div>
+          </div>
+          <div class="col-sm-6">
+            <div class="detail-label">Quantité en stock</div>
+            <div class="detail-value mono fs-5">{{ lot.quantite }}</div>
+            <div class="detail-label">Quantité reçue initialement</div>
+            <div class="detail-value mono">{{ lot.quantite_initiale }}</div>
+            <div class="detail-label">Prix d'achat unitaire</div>
+            <div class="detail-value mono">{{ lot.prix_achat|montant }} {{ devise }}</div>
+            <div class="detail-label">Valeur du stock</div>
+            <div class="detail-value mono fw-semibold">{{ lot.valeur_stock|montant }} {{ devise }}</div>
+          </div>
+        </div>
+        <hr>
+        <div class="row small text-muted">
+          <div class="col-sm-4"><span class="detail-label d-block">Réception</span>{{ lot.date_reception|date:"d/m/Y H:i" }}</div>
+          <div class="col-sm-4"><span class="detail-label d-block">Créé le</span>{{ lot.date_creation|date:"d/m/Y H:i" }}</div>
+          <div class="col-sm-4"><span class="detail-label d-block">Modifié le</span>{{ lot.date_modification|date:"d/m/Y H:i" }}</div>
+        </div>
+        <div class="mt-3">
+          {% if lot.bloque %}
+            <span class="badge badge-statut badge-danger-doux"><i class="bi bi-lock me-1"></i>Lot bloqué</span>
+            {% if lot.motif_blocage %}<div class="alert alert-danger mt-2 mb-0 small"><strong>Motif :</strong> {{ lot.motif_blocage }}</div>{% endif %}
+          {% elif lot.est_perime %}
+            <span class="badge badge-statut badge-danger-doux"><i class="bi bi-calendar-x me-1"></i>Lot périmé — non délivrable</span>
+          {% elif lot.quantite <= 0 %}
+            <span class="badge badge-statut badge-archive">Lot épuisé</span>
+          {% else %}
+            <span class="badge badge-statut badge-actif"><i class="bi bi-check-circle me-1"></i>Lot délivrable</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-4" id="blocage">
+      <div class="card-header"><i class="bi bi-shield-exclamation me-2"></i>Blocage du lot</div>
+      <div class="card-body">
+        {% if lot.bloque %}
+          <p class="text-muted small">Ce lot est exclu de la vente tant qu'il reste bloqué. Le déblocage le rend de nouveau délivrable s'il n'est pas périmé.</p>
+          <form method="post" action="{% url 'stock:bloquer_lot' lot.pk %}" data-submit-once>
+            {% csrf_token %}
+            <input type="hidden" name="suivant" value="{{ request.path }}">
+            <button type="submit" class="btn btn-outline-success" data-confirm="Débloquer ce lot et le rendre de nouveau délivrable ?">
+              <i class="bi bi-unlock me-1"></i>Débloquer le lot
+            </button>
+          </form>
+        {% else %}
+          <p class="text-muted small">Un lot bloqué ne peut plus être vendu (RG08). Le motif est conservé dans l'historique.</p>
+          <form method="post" action="{% url 'stock:bloquer_lot' lot.pk %}" novalidate data-submit-once>
+            {% csrf_token %}
+            <input type="hidden" name="suivant" value="{{ request.path }}">
+            {% include "includes/form_field.html" with field=formulaire_blocage.motif %}
+            <button type="submit" class="btn btn-danger" data-confirm="Bloquer ce lot ? Il ne sera plus délivrable.">
+              <i class="bi bi-lock me-1"></i>Bloquer le lot
+            </button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><i class="bi bi-arrow-left-right me-2"></i>Mouvements du lot</div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead><tr><th>Date</th><th>Type</th><th class="text-end">Quantité</th><th class="text-end">Prix</th><th>Référence</th><th>Auteur</th></tr></thead>
+          <tbody>
+            {% for mouvement in mouvements %}
+            <tr>
+              <td>{{ mouvement.date|date:"d/m/Y H:i" }}</td>
+              <td>{{ mouvement.get_type_mouvement_display }}</td>
+              <td class="text-end mono fw-semibold {% if mouvement.quantite >= 0 %}text-success{% else %}text-danger{% endif %}">{{ mouvement.quantite|signe_quantite }}</td>
+              <td class="text-end mono">{{ mouvement.prix_unitaire|montant|default:"—" }}</td>
+              <td class="mono">{{ mouvement.reference|default:"—" }}</td>
+              <td>{{ mouvement.utilisateur.nom_complet|default:"Système" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6"><div class="empty-state"><i class="bi bi-clock-history"></i>Aucun mouvement pour ce lot.</div></td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-receipt me-2"></i>Lignes de vente liées</div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead><tr><th>Vente</th><th>Date</th><th class="text-end">Qté</th><th class="text-end">Sous-total</th></tr></thead>
+          <tbody>
+            {% for ligne in lignes_vente %}
+            <tr>
+              <td><a href="{% url 'ventes:detail' ligne.vente_id %}" class="mono">{{ ligne.vente.numero }}</a>
+                <div class="text-muted small">{{ ligne.vente.client.nom|default:"Client de passage" }}</div>
+              </td>
+              <td>{{ ligne.vente.date_vente|date:"d/m/Y" }}</td>
+              <td class="text-end mono">{{ ligne.quantite }}</td>
+              <td class="text-end mono">{{ ligne.sous_total|montant }} {{ devise }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4"><div class="empty-state"><i class="bi bi-cart-x"></i>Aucune vente n'a utilisé ce lot.</div></td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

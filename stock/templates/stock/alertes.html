@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block titre %}Alertes de stock{% endblock %}
+{% block titre_page %}Alertes de stock{% endblock %}
+{% block sous_titre_page %}<div class="sub">Ruptures, seuils et péremptions à traiter</div>{% endblock %}
+
+{% block contenu %}
+<div class="row g-4">
+  <div class="col-xl-6">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-x-octagon text-danger me-2"></i>Ruptures</span>
+        <span class="badge badge-statut badge-danger-doux">{{ ruptures|length }}</span>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead><tr><th>Médicament</th><th class="text-end">Disponible</th><th class="text-end">Seuil</th><th class="text-end">Action</th></tr></thead>
+          <tbody>
+            {% for med in ruptures %}
+            <tr>
+              <td><a href="{% url 'medicaments:detail' med.pk %}" class="fw-semibold">{{ med.nom }} {{ med.dosage }}</a>
+                <div class="text-muted small">{{ med.denomination_generique|default:"" }}</div>
+              </td>
+              <td class="text-end mono text-danger fw-semibold">{{ med.stock_disponible_annote }}</td>
+              <td class="text-end mono">{{ med.seuil_alerte }}</td>
+              <td class="text-end"><a href="{% url 'stock:lots' %}?q={{ med.nom|urlencode }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-layers"></i></a></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4"><div class="empty-state"><i class="bi bi-check-circle"></i>Aucune rupture constatée.</div></td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-6">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-exclamation-triangle text-warning me-2"></i>Stocks sous le seuil</span>
+        <span class="badge badge-statut badge-warning-doux">{{ sous_seuil|length }}</span>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead><tr><th>Médicament</th><th class="text-end">Disponible</th><th class="text-end">Seuil</th><th class="text-end">Action</th></tr></thead>
+          <tbody>
+            {% for med in sous_seuil %}
+            <tr>
+              <td><a href="{% url 'medicaments:detail' med.pk %}" class="fw-semibold">{{ med.nom }} {{ med.dosage }}</a>
+                <div class="text-muted small">{{ med.denomination_generique|default:"" }}</div>
+              </td>
+              <td class="text-end mono text-warning fw-semibold">{{ med.stock_disponible_annote }}</td>
+              <td class="text-end mono">{{ med.seuil_alerte }}</td>
+              <td class="text-end"><a href="{% url 'stock:lots' %}?q={{ med.nom|urlencode }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-layers"></i></a></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4"><div class="empty-state"><i class="bi bi-check-circle"></i>Aucun stock sous le seuil.</div></td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-6">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-calendar-event text-warning me-2"></i>Péremptions proches (≤ {{ seuil_jours }} jours)</span>
+        <span class="badge badge-statut badge-warning-doux">{{ lots_proches|length }}</span>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead><tr><th>Médicament</th><th>Lot</th><th>Péremption</th><th class="text-end">Qté</th><th class="text-end">Action</th></tr></thead>
+          <tbody>
+            {% for lot in lots_proches %}
+            <tr>
+              <td><a href="{% url 'medicaments:detail' lot.medicament_id %}" class="fw-semibold">{{ lot.medicament }}</a></td>
+              <td class="mono">{{ lot.numero_lot }}</td>
+              <td>{{ lot.date_peremption|date:"d/m/Y" }} <span class="text-warning small">J-{{ lot.jours_avant_peremption }}</span></td>
+              <td class="text-end mono">{{ lot.quantite }}</td>
+              <td class="text-end"><a href="{% url 'stock:lot_detail' lot.pk %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5"><div class="empty-state"><i class="bi bi-check-circle"></i>Aucune péremption proche.</div></td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-6">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-calendar-x text-danger me-2"></i>Lots périmés encore en stock</span>
+        <span class="badge badge-statut badge-danger-doux">{{ lots_perimes|length }}</span>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead><tr><th>Médicament</th><th>Lot</th><th>Péremption</th><th class="text-end">Qté</th><th class="text-end">Action</th></tr></thead>
+          <tbody>
+            {% for lot in lots_perimes %}
+            <tr>
+              <td><a href="{% url 'medicaments:detail' lot.medicament_id %}" class="fw-semibold">{{ lot.medicament }}</a></td>
+              <td class="mono">{{ lot.numero_lot }}</td>
+              <td class="text-danger">{{ lot.date_peremption|date:"d/m/Y" }}</td>
+              <td class="text-end mono text-danger">{{ lot.quantite }}</td>
+              <td class="text-end"><a href="{% url 'stock:lot_detail' lot.pk %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5"><div class="empty-state"><i class="bi bi-check-circle"></i>Aucun lot périmé en stock.</div></td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="alert alert-info mt-4 mb-0 small">
+  <i class="bi bi-info-circle me-1"></i>
+  Un lot périmé ou bloqué n'est jamais proposé à la vente (RG08). Le seuil de péremption est paramétré dans les paramètres de la pharmacie ({{ seuil_jours }} jours).
+</div>
+{% endblock %}

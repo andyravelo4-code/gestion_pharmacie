@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block titre %}Mouvements de stock{% endblock %}
+{% block titre_page %}Mouvements de stock{% endblock %}
+{% block sous_titre_page %}<div class="sub">Historique signé des entrées, sorties et corrections</div>{% endblock %}
+
+{% block contenu %}
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-3">
+        {% include "includes/form_field.html" with field=form.q %}
+      </div>
+      <div class="col-md-2">
+        {% include "includes/form_field.html" with field=form.type %}
+      </div>
+      <div class="col-md-2">
+        {% include "includes/form_field.html" with field=form.date_debut %}
+      </div>
+      <div class="col-md-2">
+        {% include "includes/form_field.html" with field=form.date_fin %}
+      </div>
+      <div class="col-md-3 d-flex gap-2">
+        <button type="submit" class="btn btn-primary flex-grow-1"><i class="bi bi-search me-1"></i>Filtrer</button>
+        <a href="{% url 'stock:mouvements' %}" class="btn btn-light" title="Réinitialiser"><i class="bi bi-arrow-counterclockwise"></i></a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <span><i class="bi bi-clock-history me-2"></i>Mouvements</span>
+    <div class="d-flex align-items-center gap-2">
+      <span class="text-muted small">{{ page_obj.paginator.count }} mouvement{{ page_obj.paginator.count|pluralize }}</span>
+      <a href="{% url 'rapports:stock' %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-file-earmark-bar-graph me-1"></i>Rapport de stock</a>
+    </div>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Type</th>
+          <th>Médicament</th>
+          <th>Lot</th>
+          <th class="text-end">Quantité</th>
+          <th class="text-end">Prix unitaire</th>
+          <th>Référence</th>
+          <th>Motif</th>
+          <th>Auteur</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for mouvement in page_obj %}
+        <tr>
+          <td>{{ mouvement.date|date:"d/m/Y H:i" }}</td>
+          <td><span class="badge badge-statut {% if mouvement.quantite >= 0 %}badge-actif{% else %}badge-danger-doux{% endif %}">{{ mouvement.get_type_mouvement_display }}</span></td>
+          <td>
+            <a href="{% url 'medicaments:detail' mouvement.medicament_id %}" class="fw-semibold">{{ mouvement.medicament }}</a>
+          </td>
+          <td>
+            {% if mouvement.lot %}
+              <a href="{% url 'stock:lot_detail' mouvement.lot_id %}" class="mono">{{ mouvement.lot.numero_lot }}</a>
+            {% else %}—{% endif %}
+          </td>
+          <td class="text-end mono fw-semibold {% if mouvement.quantite >= 0 %}text-success{% else %}text-danger{% endif %}">{{ mouvement.quantite|signe_quantite }}</td>
+          <td class="text-end mono">{% if mouvement.prix_unitaire is not None %}{{ mouvement.prix_unitaire|montant }} {{ devise }}{% else %}—{% endif %}</td>
+          <td class="mono">{{ mouvement.reference|default:"—" }}</td>
+          <td class="text-muted small">{{ mouvement.motif|default:"—" }}</td>
+          <td>{{ mouvement.utilisateur.nom_complet|default:"Système" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="9"><div class="empty-state"><i class="bi bi-clock-history"></i>Aucun mouvement ne correspond aux critères.</div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% include "includes/pagination.html" %}
+{% endblock %}

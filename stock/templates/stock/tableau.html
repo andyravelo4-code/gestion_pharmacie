@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block titre %}Stock{% endblock %}
+{% block titre_page %}Tableau de stock{% endblock %}
+{% block sous_titre_page %}<div class="sub">Valeur, disponibilité et alertes des médicaments</div>{% endblock %}
+
+{% block contenu %}
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-xl-4">
+    <div class="stat-card">
+      <div class="icon"><i class="bi bi-cash-stack"></i></div>
+      <div class="label">Valeur du stock</div>
+      <div class="value">{{ cartes.valeur_stock|montant }} <span class="fs-6 fw-normal">{{ devise }}</span></div>
+      <div class="hint">Au prix d'achat, lots non vides</div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-4">
+    <div class="stat-card info">
+      <div class="icon"><i class="bi bi-layers"></i></div>
+      <div class="label">Lots en stock</div>
+      <div class="value">{{ cartes.nombre_lots }}</div>
+      <div class="hint">Lots avec quantité disponible</div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-4">
+    <div class="stat-card danger">
+      <div class="icon"><i class="bi bi-x-octagon"></i></div>
+      <div class="label">Médicaments en rupture</div>
+      <div class="value">{{ cartes.ruptures }}</div>
+      <div class="hint">Aucun stock délivrable</div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-4">
+    <div class="stat-card warning">
+      <div class="icon"><i class="bi bi-exclamation-triangle"></i></div>
+      <div class="label">Sous le seuil d'alerte</div>
+      <div class="value">{{ cartes.sous_seuil }}</div>
+      <div class="hint">Stock positif mais insuffisant</div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-4">
+    <div class="stat-card danger">
+      <div class="icon"><i class="bi bi-calendar-x"></i></div>
+      <div class="label">Lots périmés</div>
+      <div class="value">{{ cartes.perimes }}</div>
+      <div class="hint">Encore présents en stock</div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-4">
+    <div class="stat-card warning">
+      <div class="icon"><i class="bi bi-calendar-event"></i></div>
+      <div class="label">Péremptions proches</div>
+      <div class="value">{{ cartes.proches_peremption }}</div>
+      <div class="hint">Dans les {{ seuil_jours }} prochains jours</div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-6">
+        {% include "includes/form_field.html" with field=form.q %}
+      </div>
+      <div class="col-md-3">
+        {% include "includes/form_field.html" with field=form.etat %}
+      </div>
+      <div class="col-md-3 d-flex gap-2">
+        <button type="submit" class="btn btn-primary flex-grow-1"><i class="bi bi-search me-1"></i>Filtrer</button>
+        <a href="{% url 'stock:tableau' %}" class="btn btn-light" title="Réinitialiser"><i class="bi bi-arrow-counterclockwise"></i></a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <span><i class="bi bi-capsule me-2"></i>Médicaments actifs</span>
+    <span class="text-muted small">{{ page_obj.paginator.count }} médicament{{ page_obj.paginator.count|pluralize }}</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Médicament</th>
+          <th class="text-end">Stock disponible</th>
+          <th class="text-end">Seuil</th>
+          <th class="text-end">Valeur</th>
+          <th>État</th>
+          <th class="text-end">Lots</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for med in page_obj %}
+        <tr>
+          <td>
+            <a href="{% url 'medicaments:detail' med.pk %}" class="fw-semibold">{{ med.nom }} {{ med.dosage }}</a>
+            <div class="text-muted small">{{ med.denomination_generique|default:med.categorie.nom }}</div>
+          </td>
+          <td class="text-end mono fw-semibold">{{ med.stock_disponible_annote }}</td>
+          <td class="text-end mono">{{ med.seuil_alerte }}</td>
+          <td class="text-end mono">{{ med.valeur_stock_annote|montant }} {{ devise }}</td>
+          <td>
+            {% if med.stock_disponible_annote <= 0 %}
+              <span class="badge badge-statut badge-danger-doux">Rupture</span>
+            {% elif med.stock_disponible_annote <= med.seuil_alerte %}
+              <span class="badge badge-statut badge-warning-doux">Stock faible</span>
+            {% else %}
+              <span class="badge badge-statut badge-actif">Disponible</span>
+            {% endif %}
+          </td>
+          <td class="text-end">
+            <a href="{% url 'stock:lots' %}?q={{ med.nom|urlencode }}" class="btn btn-sm btn-outline-primary" title="Voir les lots">
+              <i class="bi bi-layers"></i>
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6"><div class="empty-state"><i class="bi bi-box"></i>Aucun médicament ne correspond aux critères.</div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% include "includes/pagination.html" %}
+{% endblock %}

@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block titre %}Inventaire {{ inventaire.numero }}{% endblock %}
+{% block titre_page %}Inventaire {{ inventaire.numero }}{% endblock %}
+{% block sous_titre_page %}<div class="sub">{{ inventaire.date_creation|date:"d/m/Y H:i" }} · {{ inventaire.utilisateur.nom_complet|default:"—" }}</div>{% endblock %}
+
+{% block contenu %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <a href="{% url 'stock:inventaires' %}" class="btn btn-light btn-sm"><i class="bi bi-arrow-left me-1"></i>Retour aux inventaires</a>
+  <div>
+    {% if inventaire.statut == "EN_COURS" %}
+      <span class="badge badge-statut badge-warning-doux">En cours</span>
+    {% elif inventaire.statut == "VALIDE" %}
+      <span class="badge badge-statut badge-actif">Validé le {{ inventaire.date_validation|date:"d/m/Y H:i" }}</span>
+    {% else %}
+      <span class="badge badge-statut badge-archive">Annulé</span>
+    {% endif %}
+  </div>
+</div>
+
+{% if inventaire.notes %}
+<div class="alert alert-info small"><i class="bi bi-info-circle me-1"></i>{{ inventaire.notes|linebreaksbr }}</div>
+{% endif %}
+
+<div class="card mb-4">
+  <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <span><i class="bi bi-list-check me-2"></i>Lignes de comptage</span>
+    <span class="text-muted small">{{ lignes|length }} ligne{{ lignes|length|pluralize }}</span>
+  </div>
+
+  {% if est_modifiable %}
+  <form method="post" action="{% url 'stock:inventaire_detail' inventaire.pk %}" novalidate data-submit-once>
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="alert alert-danger m-3">{{ form.non_field_errors }}</div>{% endif %}
+    <div class="table-responsive">
+      <table class="table align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Médicament</th>
+            <th>Lot</th>
+            <th>Péremption</th>
+            <th class="text-end">Théorique</th>
+            <th style="min-width:130px;">Comptée</th>
+            <th class="text-end">Écart enregistré</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ligne, champ in champs_lignes %}
+          <tr>
+            <td>{{ ligne.lot.medicament }}</td>
+            <td class="mono">{{ ligne.lot.numero_lot }}</td>
+            <td>{{ ligne.lot.date_peremption|date:"d/m/Y" }}</td>
+            <td class="text-end mono">{{ ligne.quantite_theorique }}</td>
+            <td>
+              {{ champ }}
+              {% for erreur in champ.errors %}<div class="text-danger small">{{ erreur }}</div>{% endfor %}
+            </td>
+            <td class="text-end mono {% if ligne.ecart > 0 %}text-success{% elif ligne.ecart < 0 %}text-danger{% endif %}">{{ ligne.ecart|signe_quantite }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6"><div class="empty-state"><i class="bi bi-inbox"></i>Cet inventaire ne contient aucun lot.</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-2 border-top">
+      <div class="text-muted small">Enregistrez le comptage avant de valider l'inventaire.</div>
+      <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i>Enregistrer le comptage</button>
+    </div>
+  </form>
+  {% else %}
+  <div class="table-responsive">
+    <table class="table align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Médicament</th>
+          <th>Lot</th>
+          <th>Péremption</th>
+          <th class="text-end">Théorique</th>
+          <th class="text-end">Comptée</th>
+          <th class="text-end">Écart</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for ligne in lignes %}
+        <tr>
+          <td>{{ ligne.lot.medicament }}</td>
+          <td class="mono">{{ ligne.lot.numero_lot }}</td>
+          <td>{{ ligne.lot.date_peremption|date:"d/m/Y" }}</td>
+          <td class="text-end mono">{{ ligne.quantite_theorique }}</td>
+          <td class="text-end mono">{{ ligne.quantite_comptee }}</td>
+          <td class="text-end mono fw-semibold {% if ligne.ecart > 0 %}text-success{% elif ligne.ecart < 0 %}text-danger{% endif %}">{{ ligne.ecart|signe_quantite }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6"><div class="empty-state"><i class="bi bi-inbox"></i>Cet inventaire ne contient aucun lot.</div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
+
+{% if est_modifiable %}
+<div class="card border-danger-subtle">
+  <div class="card-header"><i class="bi bi-check2-square me-2"></i>Validation de l'inventaire</div>
+  <div class="card-body">
+    <p class="text-muted small mb-3">
+      La validation applique définitivement les écarts au stock et verrouille l'inventaire.
+      Vérifiez que les quantités comptées sont bien enregistrées et que le stock n'a pas évolué entre-temps.
+    </p>
+    <form method="post" action="{% url 'stock:inventaire_valider' inventaire.pk %}" data-submit-once>
+      {% csrf_token %}
+      <button type="submit" class="btn btn-danger" data-confirm="Valider cet inventaire ? Les écarts seront appliqués au stock et l'inventaire ne sera plus modifiable.">
+        <i class="bi bi-lock me-1"></i>Valider et appliquer les écarts
+      </button>
+    </form>
+  </div>
+</div>
+{% else %}
+<div class="alert alert-success mb-0">
+  <i class="bi bi-check-circle me-1"></i>
+  Cet inventaire est clôturé : les quantités et les écarts sont en lecture seule.
+</div>
+{% endif %}
+{% endblock %}
