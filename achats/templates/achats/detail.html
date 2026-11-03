@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block titre %}Commande {{ commande.numero }}{% endblock %}
+{% block titre_page %}Commande {{ commande.numero }}{% endblock %}
+{% block sous_titre_page %}<div class="sub">{{ commande.fournisseur.nom }} · {{ commande.date_creation|date:"d/m/Y H:i" }}</div>{% endblock %}
+
+{% block contenu %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <a href="{% url 'achats:liste' %}" class="btn btn-light btn-sm"><i class="bi bi-arrow-left me-1"></i>Retour aux commandes</a>
+  <div class="d-flex flex-wrap gap-2">
+    <a href="{% url 'rapports:bon_commande' commande.pk %}" class="btn btn-outline-primary btn-sm" target="_blank" rel="noopener">
+      <i class="bi bi-file-earmark-pdf me-1"></i>Bon de commande PDF
+    </a>
+    {% if commande.est_modifiable %}
+      <a href="{% url 'achats:modifier' commande.pk %}" class="btn btn-outline-primary btn-sm"><i class="bi bi-pencil me-1"></i>Modifier</a>
+      <form method="post" action="{% url 'achats:valider' commande.pk %}" class="d-inline" data-submit-once>
+        {% csrf_token %}
+        <button type="submit" class="btn btn-primary btn-sm" data-confirm="Valider cette commande ? Elle ne sera plus modifiable et le stock sera augmenté uniquement à la réception.">
+          <i class="bi bi-check2-circle me-1"></i>Valider la commande
+        </button>
+      </form>
+    {% endif %}
+    {% if commande.peut_etre_receptionnee %}
+      <a href="{% url 'achats:receptionner' commande.pk %}" class="btn btn-primary btn-sm"><i class="bi bi-box-arrow-in-down me-1"></i>Réceptionner</a>
+    {% endif %}
+    {% if commande.peut_etre_annulee %}
+      <form method="post" action="{% url 'achats:annuler' commande.pk %}" class="d-inline" data-submit-once>
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline-danger btn-sm" data-confirm="Annuler cette commande ? Cette action est définitive.">
+          <i class="bi bi-x-circle me-1"></i>Annuler
+        </button>
+      </form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="card mb-4">
+      <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <span><i class="bi bi-info-circle me-2"></i>Informations</span>
+        <div>
+          {% if commande.statut == "BROUILLON" %}
+            <span class="badge badge-statut badge-archive">Brouillon</span>
+          {% elif commande.statut == "COMMANDEE" %}
+            <span class="badge badge-statut badge-info-doux">Commandée</span>
+          {% elif commande.statut == "PARTIELLEMENT_RECEPTIONNEE" %}
+            <span class="badge badge-statut badge-warning-doux">Partiellement réceptionnée</span>
+          {% elif commande.statut == "RECEPTIONNEE" %}
+            <span class="badge badge-statut badge-actif">Entièrement réceptionnée</span>
+          {% else %}
+            <span class="badge badge-statut badge-danger-doux">Annulée</span>
+          {% endif %}
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-sm-6">
+            <div class="detail-label">Fournisseur</div>
+            <div class="detail-value"><a href="{% url 'fournisseurs:detail' commande.fournisseur_id %}">{{ commande.fournisseur.nom }}</a></div>
+            <div class="detail-label">Créée par</div>
+            <div class="detail-value">{{ commande.utilisateur.nom_complet|default:"—" }}</div>
+          </div>
+          <div class="col-sm-6">
+            <div class="detail-label">Date de validation</div>
+            <div class="detail-value">{{ commande.date_commande|date:"d/m/Y H:i"|default:"—" }}</div>
+            <div class="detail-label">Dernière modification</div>
+            <div class="detail-value">{{ commande.date_modification|date:"d/m/Y H:i" }}</div>
+          </div>
+        </div>
+        {% if commande.notes %}
+          <div class="detail-label">Notes</div>
+          <div class="detail-value">{{ commande.notes|linebreaksbr }}</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <span><i class="bi bi-list-check me-2"></i>Lignes de commande</span>
+        {% if commande.est_modifiable %}
+          <a href="{% url 'achats:ajouter_ligne' commande.pk %}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i>Ajouter une ligne</a>
+        {% endif %}
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Médicament</th>
+              <th class="text-end">Commandée</th>
+              <th class="text-end">Reçue</th>
+              <th class="text-end">Restante</th>
+              <th class="text-end">Prix unitaire</th>
+              <th class="text-end">Sous-total</th>
+              {% if commande.est_modifiable %}<th class="text-end">Actions</th>{% endif %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for ligne in lignes %}
+            <tr>
+              <td>
+                <a href="{% url 'medicaments:detail' ligne.medicament_id %}" class="fw-semibold">{{ ligne.medicament }}</a>
+              </td>
+              <td class="text-end mono">{{ ligne.quantite_commandee }}</td>
+              <td class="text-end mono">{{ ligne.quantite_recue }}</td>
+              <td class="text-end mono {% if ligne.quantite_restante > 0 %}text-warning fw-semibold{% endif %}">{{ ligne.quantite_restante }}</td>
+              <td class="text-end mono">{{ ligne.prix_achat_unitaire|montant }} {{ devise }}</td>
+              <td class="text-end mono">{{ ligne.sous_total|montant }} {{ devise }}</td>
+              {% if commande.est_modifiable %}
+              <td class="text-end table-actions">
+                <a href="{% url 'achats:modifier_ligne' ligne.pk %}" class="btn btn-sm btn-outline-primary" title="Modifier"><i class="bi bi-pencil"></i></a>
+                <form method="post" action="{% url 'achats:supprimer_ligne' ligne.pk %}" class="d-inline">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-sm btn-outline-danger" data-confirm="Supprimer cette ligne de la commande ?" title="Supprimer"><i class="bi bi-trash"></i></button>
+                </form>
+              </td>
+              {% endif %}
+            </tr>
+            {% empty %}
+            <tr><td colspan="{% if commande.est_modifiable %}7{% else %}6{% endif %}"><div class="empty-state"><i class="bi bi-inbox"></i>Aucune ligne. Ajoutez les médicaments à commander.</div></td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card mb-4">
+      <div class="card-header"><i class="bi bi-calculator me-2"></i>Totaux</div>
+      <div class="card-body">
+        <div class="summary-row"><span class="text-muted">Quantité commandée</span><span class="mono">{{ quantite_commandee_totale }}</span></div>
+        <div class="summary-row"><span class="text-muted">Quantité reçue</span><span class="mono">{{ quantite_recue_totale }}</span></div>
+        <div class="summary-row"><span class="text-muted">Montant commandé</span><span class="mono fw-semibold">{{ commande.total_annote|montant }} {{ devise }}</span></div>
+        <div class="summary-row"><span class="text-muted">Montant réceptionné</span><span class="mono">{{ commande.montant_receptionne|montant }} {{ devise }}</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><i class="bi bi-truck me-2"></i>Réceptions</div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead><tr><th>Numéro</th><th>Date</th><th class="text-end">Montant</th></tr></thead>
+          <tbody>
+            {% for reception in receptions %}
+            <tr>
+              <td>
+                <a href="{% url 'achats:reception_detail' reception.pk %}" class="mono">{{ reception.numero }}</a>
+                <div class="text-muted small">{{ reception.nombre_lignes }} ligne{{ reception.nombre_lignes|pluralize }}</div>
+              </td>
+              <td>{{ reception.date_reception|date:"d/m/Y" }}</td>
+              <td class="text-end mono">{{ reception.total_annote|montant }} {{ devise }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="3"><div class="empty-state py-3"><i class="bi bi-truck"></i>Aucune réception.</div></td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="alert alert-info mt-4 small mb-0">
+      <i class="bi bi-info-circle me-1"></i>
+      <strong>RG04 / RG05 :</strong> la commande seule n'augmente pas le stock. Seule la réception effective l'augmente, une seule fois et de façon atomique.
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block titre %}Réception {{ commande.numero }}{% endblock %}
+{% block titre_page %}Réception de la commande {{ commande.numero }}{% endblock %}
+{% block sous_titre_page %}<div class="sub">{{ commande.fournisseur.nom }} · seules les quantités saisies entrent en stock</div>{% endblock %}
+
+{% block contenu %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <a href="{% url 'achats:detail' commande.pk %}" class="btn btn-light btn-sm"><i class="bi bi-arrow-left me-1"></i>Retour à la commande</a>
+</div>
+
+<div class="alert alert-info small">
+  <i class="bi bi-info-circle me-1"></i>
+  <strong>Réception effective :</strong> le stock n'est augmenté que lors de la validation de cette réception
+  (RG04 / RG05). Saisissez <strong>0</strong> ou laissez vide pour les lignes non reçues : elles resteront en attente.
+</div>
+
+<form method="post" novalidate data-submit-once>
+  {% csrf_token %}
+  {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+
+  {% for item in champs_lignes %}
+  <div class="card mb-3">
+    <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <span><i class="bi bi-capsule me-2"></i>{{ item.ligne.medicament }}</span>
+      <span class="text-muted small">
+        Commandée : <span class="mono">{{ item.ligne.quantite_commandee }}</span> ·
+        Déjà reçue : <span class="mono">{{ item.ligne.quantite_recue }}</span> ·
+        <strong>Restante : <span class="mono">{{ item.ligne.quantite_restante }}</span></strong>
+      </span>
+    </div>
+    <div class="card-body">
+      <div class="row g-2">
+        <div class="col-md-3">
+          {% include "includes/form_field.html" with field=item.quantite %}
+        </div>
+        <div class="col-md-3">
+          {% include "includes/form_field.html" with field=item.numero_lot %}
+        </div>
+        <div class="col-md-3">
+          {% include "includes/form_field.html" with field=item.date_peremption %}
+        </div>
+        <div class="col-md-3">
+          {% include "includes/form_field.html" with field=item.prix_unitaire %}
+        </div>
+      </div>
+    </div>
+  </div>
+  {% empty %}
+  <div class="card mb-3"><div class="card-body"><div class="empty-state"><i class="bi bi-inbox"></i>Aucune ligne restante à réceptionner.</div></div></div>
+  {% endfor %}
+
+  <div class="card mb-3">
+    <div class="card-body">
+      <label class="form-label" for="notesReception">Notes de réception</label>
+      <textarea name="notes" id="notesReception" rows="2" class="form-control" placeholder="Observations, état des colis, réserve éventuelle…">{{ request.POST.notes|default:"" }}</textarea>
+    </div>
+  </div>
+
+  <div class="d-flex justify-content-end gap-2">
+    <a href="{% url 'achats:detail' commande.pk %}" class="btn btn-light">Annuler</a>
+    <button type="submit" class="btn btn-primary" data-confirm="Enregistrer cette réception ? Le stock sera augmenté des quantités saisies.">
+      <i class="bi bi-box-arrow-in-down me-1"></i>Enregistrer la réception
+    </button>
+  </div>
+</form>
+{% endblock %}

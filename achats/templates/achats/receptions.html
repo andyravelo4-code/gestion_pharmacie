@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block titre %}Réceptions{% endblock %}
+{% block titre_page %}Réceptions d'achat{% endblock %}
+{% block sous_titre_page %}<div class="sub">Historique des entrées de stock issues des commandes</div>{% endblock %}
+
+{% block contenu %}
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-4">
+        {% include "includes/form_field.html" with field=form.q %}
+      </div>
+      <div class="col-md-3">
+        {% include "includes/form_field.html" with field=form.fournisseur %}
+      </div>
+      <div class="col-md-2">
+        {% include "includes/form_field.html" with field=form.date_debut %}
+      </div>
+      <div class="col-md-2">
+        {% include "includes/form_field.html" with field=form.date_fin %}
+      </div>
+      <div class="col-md-1 d-flex gap-1">
+        <button type="submit" class="btn btn-primary flex-grow-1" title="Filtrer"><i class="bi bi-search"></i></button>
+        <a href="{% url 'achats:receptions' %}" class="btn btn-light" title="Réinitialiser"><i class="bi bi-arrow-counterclockwise"></i></a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <span><i class="bi bi-truck me-2"></i>Réceptions</span>
+    <span class="text-muted small">{{ page_obj.paginator.count }} réception{{ page_obj.paginator.count|pluralize }}</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Numéro</th>
+          <th>Commande</th>
+          <th>Fournisseur</th>
+          <th>Date</th>
+          <th class="text-end">Lignes</th>
+          <th class="text-end">Montant</th>
+          <th>Réceptionné par</th>
+          <th class="text-end">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for reception in page_obj %}
+        <tr>
+          <td><a href="{% url 'achats:reception_detail' reception.pk %}" class="mono fw-semibold">{{ reception.numero }}</a></td>
+          <td><a href="{% url 'achats:detail' reception.commande_id %}" class="mono">{{ reception.commande.numero }}</a></td>
+          <td>{{ reception.commande.fournisseur.nom }}</td>
+          <td>{{ reception.date_reception|date:"d/m/Y H:i" }}</td>
+          <td class="text-end mono">{{ reception.nombre_lignes }}</td>
+          <td class="text-end mono">{{ reception.total_annote|montant }} {{ devise }}</td>
+          <td>{{ reception.utilisateur.nom_complet|default:"—" }}</td>
+          <td class="text-end">
+            <a href="{% url 'achats:reception_detail' reception.pk %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye me-1"></i>Détail</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8"><div class="empty-state"><i class="bi bi-truck"></i>Aucune réception ne correspond aux critères.</div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% include "includes/pagination.html" %}
+{% endblock %}

@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block titre %}Réception {{ reception.numero }}{% endblock %}
+{% block titre_page %}Réception {{ reception.numero }}{% endblock %}
+{% block sous_titre_page %}<div class="sub">Commande {{ reception.commande.numero }} · {{ reception.date_reception|date:"d/m/Y H:i" }}</div>{% endblock %}
+
+{% block contenu %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <a href="{% url 'achats:receptions' %}" class="btn btn-light btn-sm"><i class="bi bi-arrow-left me-1"></i>Retour aux réceptions</a>
+  <div class="d-flex gap-2">
+    <a href="{% url 'achats:detail' reception.commande_id %}" class="btn btn-outline-primary btn-sm"><i class="bi bi-cart me-1"></i>Voir la commande</a>
+    <a href="{% url 'rapports:bon_reception' reception.pk %}" class="btn btn-outline-primary btn-sm" target="_blank" rel="noopener">
+      <i class="bi bi-file-earmark-pdf me-1"></i>Bon de réception PDF
+    </a>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-info-circle me-2"></i>Informations</div>
+      <div class="card-body">
+        <div class="detail-label">Numéro de réception</div>
+        <div class="detail-value mono">{{ reception.numero }}</div>
+        <div class="detail-label">Commande</div>
+        <div class="detail-value"><a href="{% url 'achats:detail' reception.commande_id %}" class="mono">{{ reception.commande.numero }}</a></div>
+        <div class="detail-label">Fournisseur</div>
+        <div class="detail-value">{{ reception.commande.fournisseur.nom }}</div>
+        <div class="detail-label">Date de réception</div>
+        <div class="detail-value">{{ reception.date_reception|date:"d/m/Y H:i" }}</div>
+        <div class="detail-label">Réceptionné par</div>
+        <div class="detail-value">{{ reception.utilisateur.nom_complet|default:"—" }}</div>
+        {% if reception.notes %}
+          <div class="detail-label">Notes</div>
+          <div class="detail-value">{{ reception.notes|linebreaksbr }}</div>
+        {% endif %}
+        <hr>
+        <div class="summary-row"><span class="text-muted">Quantité totale</span><span class="mono fw-semibold">{{ quantite_totale }}</span></div>
+        <div class="summary-row"><span class="text-muted">Montant total</span><span class="mono fw-semibold">{{ montant_total|montant }} {{ devise }}</span></div>
+      </div>
+    </div>
+    <div class="alert alert-info mt-3 small mb-0">
+      <i class="bi bi-shield-check me-1"></i>
+      Une réception validée ne peut être ni modifiée ni supprimée (RG05 / RG10). Toute correction passe par une opération compensatoire tracée.
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-list-check me-2"></i>Lignes reçues</div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Médicament</th>
+              <th>Lot</th>
+              <th>Péremption</th>
+              <th class="text-end">Quantité</th>
+              <th class="text-end">Prix unitaire</th>
+              <th class="text-end">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for ligne in lignes %}
+            <tr>
+              <td><a href="{% url 'medicaments:detail' ligne.ligne_achat.medicament_id %}" class="fw-semibold">{{ ligne.ligne_achat.medicament }}</a></td>
+              <td class="mono">
+                {% if ligne.lot_id %}
+                  <a href="{% url 'stock:lot_detail' ligne.lot_id %}">{{ ligne.numero_lot }}</a>
+                {% else %}{{ ligne.numero_lot }}{% endif %}
+              </td>
+              <td>{{ ligne.date_peremption|date:"d/m/Y" }}</td>
+              <td class="text-end mono">{{ ligne.quantite }}</td>
+              <td class="text-end mono">{{ ligne.prix_unitaire|montant }} {{ devise }}</td>
+              <td class="text-end mono">{{ ligne.sous_total|montant }} {{ devise }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6"><div class="empty-state"><i class="bi bi-inbox"></i>Aucune ligne dans cette réception.</div></td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
