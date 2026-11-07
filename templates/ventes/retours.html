@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block titre %}Retours{% endblock %}
+{% block titre_page %}Retours et annulations{% endblock %}
+{% block sous_titre_page %}<div class="sub">Traçabilité des retours, remboursements et opérations compensatoires</div>{% endblock %}
+
+{% block contenu %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <div>
+    <h2 class="page-title">Retours enregistrés</h2>
+    <div class="page-subtitle">{{ page_obj.paginator.count }} opération{{ page_obj.paginator.count|pluralize }} · {{ montant_total|montant }} {{ devise }} remboursés</div>
+  </div>
+  <a href="{% url 'ventes:liste' %}" class="btn btn-light"><i class="bi bi-receipt me-1"></i>Ventes</a>
+</div>
+
+<form method="get" class="search-bar mb-3">
+  <div class="row g-2 align-items-end">
+    <div class="col-lg-4">
+      <label class="filter-label">Recherche</label>
+      <input type="search" name="q" value="{{ q }}" class="form-control" placeholder="N° retour, vente, motif">
+    </div>
+    <div class="col-lg-2">
+      <label class="filter-label">Type</label>
+      <select name="type" class="form-select">
+        <option value="">Tous</option>
+        {% for code, libelle in types %}<option value="{{ code }}" {% if code == type_selectionne %}selected{% endif %}>{{ libelle }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-lg-2"><label class="filter-label">Du</label><input type="date" name="debut" value="{{ debut }}" class="form-control"></div>
+    <div class="col-lg-2"><label class="filter-label">Au</label><input type="date" name="fin" value="{{ fin }}" class="form-control"></div>
+    <div class="col-lg-2 d-flex gap-2">
+      <button class="btn btn-primary flex-grow-1"><i class="bi bi-funnel"></i></button>
+      <a href="{% url 'ventes:retours' %}" class="btn btn-light"><i class="bi bi-arrow-counterclockwise"></i></a>
+    </div>
+  </div>
+</form>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead><tr><th>Numéro</th><th>Date</th><th>Vente</th><th>Type</th><th>Motif</th><th class="text-center">Quantité</th><th class="text-end">Remboursé</th><th>Par</th></tr></thead>
+      <tbody>
+        {% for retour in retours %}
+        <tr>
+          <td class="fw-semibold mono">{{ retour.numero }}</td>
+          <td class="text-muted-sm text-nowrap">{{ retour.date_retour|date:"d/m/Y H:i" }}</td>
+          <td><a href="{% url 'ventes:detail' retour.vente.pk %}" class="mono">{{ retour.vente.numero }}</a></td>
+          <td><span class="badge {% if retour.type_retour == 'ANNULATION' %}badge-danger-doux{% else %}badge-info-doux{% endif %}">{{ retour.get_type_retour_display }}</span></td>
+          <td>{{ retour.motif }}</td>
+          <td class="text-center">{{ retour.quantite_totale }}</td>
+          <td class="text-end mono">{{ retour.montant_rembourse|montant }} {{ devise }}</td>
+          <td class="text-muted-sm">{{ retour.utilisateur.nom_complet|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="text-center text-muted py-5"><i class="bi bi-arrow-return-left d-block fs-3 mb-2"></i>Aucun retour enregistré.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% include "includes/pagination.html" %}
+{% endblock %}

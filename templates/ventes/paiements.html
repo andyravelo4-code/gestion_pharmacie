@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block titre %}Paiements{% endblock %}
+{% block titre_page %}Paiements{% endblock %}
+{% block sous_titre_page %}<div class="sub">Contrôle des encaissements et confirmation des paiements électroniques</div>{% endblock %}
+
+{% block contenu %}
+<div class="alert alert-info">
+  <i class="bi bi-shield-check me-2"></i>Un paiement électronique ne doit être confirmé qu'après vérification fiable de son statut auprès de l'opérateur ou de la banque.
+</div>
+<form method="get" class="search-bar mb-3">
+  <div class="row g-2 align-items-end">
+    <div class="col-md-3">
+      <label class="filter-label">Statut</label>
+      <select name="statut" class="form-select">
+        <option value="">Tous</option>
+        {% for code, libelle in statuts %}<option value="{{ code }}" {% if code == statut_selectionne %}selected{% endif %}>{{ libelle }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label class="filter-label">Mode</label>
+      <select name="mode" class="form-select">
+        <option value="">Tous</option>
+        {% for code, libelle in modes %}<option value="{{ code }}" {% if code == mode_selectionne %}selected{% endif %}>{{ libelle }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2 d-flex gap-2">
+      <button class="btn btn-primary flex-grow-1"><i class="bi bi-funnel"></i></button>
+      <a href="{% url 'ventes:paiements' %}" class="btn btn-light"><i class="bi bi-arrow-counterclockwise"></i></a>
+    </div>
+  </div>
+</form>
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead><tr><th>Vente</th><th>Date</th><th>Mode</th><th>Référence</th><th class="text-end">Montant</th><th>Statut</th><th>Confirmé par</th><th></th></tr></thead>
+      <tbody>
+        {% for paiement in paiements %}
+        <tr>
+          <td><a href="{% url 'ventes:detail' paiement.vente.pk %}" class="mono fw-semibold">{{ paiement.vente.numero }}</a></td>
+          <td class="text-muted-sm">{{ paiement.date_paiement|date:"d/m/Y H:i" }}</td>
+          <td>{{ paiement.get_mode_display }}</td>
+          <td class="mono text-muted-sm">{{ paiement.reference|default:"—" }}</td>
+          <td class="text-end mono fw-semibold">{{ paiement.montant|montant }} {{ devise }}</td>
+          <td><span class="badge {% if paiement.statut == 'CONFIRME' %}badge-actif{% elif paiement.statut == 'EN_ATTENTE' %}badge-warning-doux{% else %}badge-danger-doux{% endif %}">{{ paiement.get_statut_display }}</span></td>
+          <td class="text-muted-sm">{{ paiement.confirme_par.nom_complet|default:"—" }}</td>
+          <td class="text-end">
+            {% if paiement.statut == 'EN_ATTENTE' %}
+            <form method="post" action="{% url 'ventes:confirmer_paiement' paiement.pk %}">
+              {% csrf_token %}
+              <button class="btn btn-sm btn-primary" data-confirm="Confirmer ce paiement après vérification ?"><i class="bi bi-check-lg me-1"></i>Confirmer</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="text-center text-muted py-5">Aucun paiement enregistré.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% include "includes/pagination.html" %}
+{% endblock %}

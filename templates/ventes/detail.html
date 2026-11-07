@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block titre %}Vente {{ vente.numero }}{% endblock %}
+{% block titre_page %}Vente {{ vente.numero }}{% endblock %}
+{% block sous_titre_page %}<div class="sub">{{ vente.date_vente|date:"d/m/Y à H:i" }} · {{ vente.get_statut_display }}</div>{% endblock %}
+
+{% block contenu %}
+{% if nouvelle %}
+<div class="alert alert-success d-flex flex-wrap justify-content-between align-items-center gap-2">
+  <div><i class="bi bi-check-circle-fill me-2"></i>Vente validée. Le stock a été mis à jour et le reçu est disponible.</div>
+  <div class="d-flex gap-2">
+    <a href="{% url 'rapports:recu_vente' vente.pk %}" class="btn btn-sm btn-primary" target="_blank"><i class="bi bi-printer me-1"></i>Imprimer le reçu</a>
+    <a href="{% url 'ventes:caisse' %}" class="btn btn-sm btn-light"><i class="bi bi-plus-lg me-1"></i>Nouvelle vente</a>
+  </div>
+</div>
+{% endif %}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <a href="{% url 'ventes:liste' %}" class="btn btn-light btn-sm"><i class="bi bi-arrow-left me-1"></i>Retour aux ventes</a>
+  <div class="d-flex flex-wrap gap-2">
+    <a href="{% url 'rapports:recu_vente' vente.pk %}" class="btn btn-outline-primary btn-sm" target="_blank"><i class="bi bi-receipt me-1"></i>Reçu PDF</a>
+    <a href="{% url 'rapports:facture_vente' vente.pk %}" class="btn btn-outline-primary btn-sm" target="_blank"><i class="bi bi-file-earmark-text me-1"></i>Facture PDF</a>
+    {% if peut_retourner %}
+      <a href="{% url 'ventes:retour' vente.pk %}" class="btn btn-outline-warning btn-sm"><i class="bi bi-arrow-return-left me-1"></i>Retour</a>
+    {% endif %}
+    {% if peut_annuler %}
+      <a href="{% url 'ventes:annuler' vente.pk %}" class="btn btn-outline-danger btn-sm"><i class="bi bi-x-circle me-1"></i>Annuler</a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="card mb-4">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-basket me-2"></i>Articles vendus</span>
+        <span class="badge {% if vente.statut == 'VALIDEE' %}badge-actif{% else %}badge-danger-doux{% endif %}">{{ vente.get_statut_display }}</span>
+      </div>
+      <div class="table-responsive">
+        <table class="table align-middle mb-0">
+          <thead>
+            <tr><th>Médicament</th><th>Lot</th><th class="text-center">Qté</th><th class="text-end">Prix unitaire</th><th class="text-center">Retourné</th><th class="text-end">Sous-total</th></tr>
+          </thead>
+          <tbody>
+            {% for ligne in vente.lignes.all %}
+            <tr>
+              <td>
+                <div class="fw-semibold">{{ ligne.medicament.nom }} {{ ligne.medicament.dosage }}</div>
+                <div class="text-muted-sm">{{ ligne.medicament.forme }}</div>
+              </td>
+              <td>
+                <div>{{ ligne.lot.numero_lot }}</div>
+                <div class="text-muted-sm">Péremption {{ ligne.lot.date_peremption|date:"d/m/Y" }}</div>
+              </td>
+              <td class="text-center">{{ ligne.quantite }}</td>
+              <td class="text-end mono">{{ ligne.prix_unitaire|montant }} {{ devise }}</td>
+              <td class="text-center">{% if ligne.quantite_retournee %}<span class="badge badge-warning-doux">{{ ligne.quantite_retournee }}</span>{% else %}—{% endif %}</td>
+              <td class="text-end mono fw-semibold">{{ ligne.sous_total|montant }} {{ devise }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><i class="bi bi-arrow-return-left me-2"></i>Retours et opérations compensatoires</div>
+      <div class="table-responsive">
+        <table class="table align-middle mb-0">
+          <thead><tr><th>Numéro</th><th>Date</th><th>Type</th><th>Motif</th><th class="text-center">Qté</th><th class="text-end">Remboursé</th></tr></thead>
+          <tbody>
+            {% for retour in vente.retours.all %}
+            <tr>
+              <td class="fw-semibold">{{ retour.numero }}</td>
+              <td class="text-muted-sm">{{ retour.date_retour|date:"d/m/Y H:i" }}</td>
+              <td><span class="badge badge-info-doux">{{ retour.get_type_retour_display }}</span></td>
+              <td>{{ retour.motif }}</td>
+              <td class="text-center">{{ retour.quantite_totale }}</td>
+              <td class="text-end">{{ retour.montant_rembourse|montant }} {{ devise }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="text-center text-muted py-4">Aucun retour sur cette vente.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card mb-4">
+      <div class="card-header"><i class="bi bi-info-circle me-2"></i>Informations</div>
+      <div class="card-body">
+        <div class="detail-label">Numéro</div>
+        <div class="detail-value mono">{{ vente.numero }}</div>
+        <div class="detail-label">Client</div>
+        <div class="detail-value">{{ vente.client.nom_affichage|default:"Client de passage" }}</div>
+        <div class="detail-label">Caissier</div>
+        <div class="detail-value">{{ vente.utilisateur.nom_complet|default:"—" }}</div>
+        <div class="detail-label">Date</div>
+        <div class="detail-value">{{ vente.date_vente|date:"d/m/Y à H:i" }}</div>
+        {% if vente.notes %}<div class="detail-label">Notes</div><div class="detail-value">{{ vente.notes }}</div>{% endif %}
+      </div>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-header"><i class="bi bi-calculator me-2"></i>Montants</div>
+      <div class="card-body">
+        <div class="summary-row"><span>Total de la vente</span><strong class="mono">{{ vente.montant_total|montant }} {{ devise }}</strong></div>
+        <div class="summary-row"><span>Retours</span><span class="mono text-danger">− {{ vente.montant_retourne|montant }} {{ devise }}</span></div>
+        <div class="summary-row"><span>Net</span><strong class="mono">{{ vente.montant_net|montant }} {{ devise }}</strong></div>
+        <div class="summary-row"><span>Encaissé confirmé</span><span class="mono">{{ vente.montant_paye|montant }} {{ devise }}</span></div>
+        <div class="summary-row"><span>Reste à payer</span><span class="mono">{{ vente.reste_a_payer|montant }} {{ devise }}</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><i class="bi bi-credit-card me-2"></i>Paiements</div>
+      <div class="card-body">
+        {% for paiement in vente.paiements.all %}
+        <div class="mb-3 pb-2 {% if not forloop.last %}border-bottom{% endif %}">
+          <div class="d-flex justify-content-between">
+            <span class="fw-semibold">{{ paiement.get_mode_display }}</span>
+            <span class="mono fw-bold">{{ paiement.montant|montant }} {{ devise }}</span>
+          </div>
+          <div class="text-muted-sm">{{ paiement.date_paiement|date:"d/m/Y H:i" }} · {{ paiement.get_statut_display }}</div>
+          {% if paiement.reference %}<div class="text-muted-sm">Réf. {{ paiement.reference }}</div>{% endif %}
+          {% if paiement.montant_recu is not None %}<div class="text-muted-sm">Reçu : {{ paiement.montant_recu|montant }} {{ devise }}</div>{% endif %}
+        </div>
+        {% empty %}
+        <div class="text-muted small">Aucun paiement enregistré.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

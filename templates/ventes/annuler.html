@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block titre %}Annuler {{ vente.numero }}{% endblock %}
+{% block titre_page %}Annulation de la vente {{ vente.numero }}{% endblock %}
+{% block sous_titre_page %}<div class="sub">Opération compensatoire traçable</div>{% endblock %}
+
+{% block contenu %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="alert alert-danger">
+      <i class="bi bi-exclamation-octagon me-2"></i><strong>La vente ne sera pas supprimée.</strong> Une opération compensatoire sera créée, le stock éventuellement réintégré et l'historique conservé (RG10).
+    </div>
+    <div class="card mb-4">
+      <div class="card-header"><i class="bi bi-receipt me-2"></i>Vente concernée</div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6"><div class="detail-label">Numéro</div><div class="detail-value mono">{{ vente.numero }}</div></div>
+          <div class="col-md-6"><div class="detail-label">Date</div><div class="detail-value">{{ vente.date_vente|date:"d/m/Y H:i" }}</div></div>
+          <div class="col-md-6"><div class="detail-label">Client</div><div class="detail-value">{{ vente.client.nom_affichage|default:"Client de passage" }}</div></div>
+          <div class="col-md-6"><div class="detail-label">Total</div><div class="detail-value mono">{{ vente.montant_total|montant }} {{ devise }}</div></div>
+        </div>
+        <hr>
+        {% for ligne in vente.lignes.all %}
+        <div class="summary-row">
+          <span>{{ ligne.medicament }} — lot {{ ligne.lot.numero_lot }}</span>
+          <span>{{ ligne.quantite_retournable }} / {{ ligne.quantite }} retournable(s)</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><i class="bi bi-pencil me-2"></i>Motif de l'annulation</div>
+      <div class="card-body">
+        <form method="post" novalidate>
+          {% csrf_token %}
+          {% include "includes/form_field.html" with field=form.motif %}
+          {% include "includes/form_check.html" with field=form.remise_en_stock %}
+          <div class="alert alert-info small">Si un lot est périmé ou bloqué, la remise en stock sera refusée par le serveur : décochez l'option ou corrigez le lot.</div>
+          <div class="d-flex justify-content-end gap-2">
+            <a href="{% url 'ventes:detail' vente.pk %}" class="btn btn-light">Retour</a>
+            <button type="submit" class="btn btn-danger" data-confirm="Confirmer l'annulation de la vente {{ vente.numero }} ?"><i class="bi bi-x-circle me-1"></i>Annuler la vente</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
