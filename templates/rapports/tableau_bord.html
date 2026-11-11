@@ -1,0 +1,390 @@
+{% extends "base.html" %}
+{% load core_extras static %}
+{% block titre %}Tableau de bord{% endblock %}
+{% block titre_page %}Tableau de bord{% endblock %}
+{% block sous_titre_page %}<div class="sub">{{ aujourd_hui|date:"l j F Y" }} · vue d'ensemble de l'activité</div>{% endblock %}
+
+{% block contenu %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <div>
+    <h2 class="page-title">Activité de la pharmacie</h2>
+    <div class="page-subtitle">{{ libelle_periode }} · montants exprimés en {{ devise }}</div>
+  </div>
+  {% if peut_rapports_utilisateur %}
+  <form method="get" class="search-bar d-flex flex-wrap align-items-end gap-2 py-2">
+    <div>
+      <label class="filter-label d-block" for="{{ filtre.debut.id_for_label }}">Du</label>
+      {{ filtre.debut }}
+    </div>
+    <div>
+      <label class="filter-label d-block" for="{{ filtre.fin.id_for_label }}">Au</label>
+      {{ filtre.fin }}
+    </div>
+    <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-funnel me-1"></i>Appliquer</button>
+    <a href="{% url 'rapports:tableau_bord' %}" class="btn btn-light btn-sm">30 derniers jours</a>
+  </form>
+  {% endif %}
+</div>
+
+{% if filtre.errors %}
+<div class="alert alert-warning auto-dismiss">
+  Les dates saisies sont invalides ; la période par défaut est utilisée.
+</div>
+{% endif %}
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-4 col-xxl-2">
+    <div class="stat-card h-100">
+      <div class="label">Médicaments actifs</div>
+      <div class="value">{{ medicaments_actifs }}</div>
+      <div class="hint"><a href="{% url 'medicaments:liste' %}">Voir le catalogue</a></div>
+      <span class="icon"><i class="bi bi-capsule"></i></span>
+    </div>
+  </div>
+  <div class="col-6 col-lg-4 col-xxl-2">
+    <div class="stat-card h-100">
+      <div class="label">Ventes du jour</div>
+      <div class="value">{{ ventes_jour_brut|montant }} <small class="text-muted">{{ devise }}</small></div>
+      <div class="hint">Brut · net après retours : {{ ventes_jour_net|montant }} {{ devise }}</div>
+      <span class="icon"><i class="bi bi-cash-register"></i></span>
+    </div>
+  </div>
+  <div class="col-6 col-lg-4 col-xxl-2">
+    <div class="stat-card warning h-100">
+      <div class="label">Stocks faibles</div>
+      <div class="value">{{ stocks_faibles }}</div>
+      <div class="hint">{% if peut_rapports_utilisateur %}<a href="{% url 'rapports:stock' %}?etat=faible">Sous le seuil d'alerte</a>{% else %}Sous le seuil d'alerte{% endif %}</div>
+      <span class="icon"><i class="bi bi-exclamation-triangle"></i></span>
+    </div>
+  </div>
+  <div class="col-6 col-lg-4 col-xxl-2">
+    <div class="stat-card danger h-100">
+      <div class="label">Ruptures</div>
+      <div class="value">{{ ruptures }}</div>
+      <div class="hint">{% if peut_rapports_utilisateur %}<a href="{% url 'rapports:stock' %}?etat=rupture">Stock délivrable nul</a>{% else %}Stock délivrable nul{% endif %}</div>
+      <span class="icon"><i class="bi bi-x-octagon"></i></span>
+    </div>
+  </div>
+  <div class="col-6 col-lg-4 col-xxl-2">
+    <div class="stat-card info h-100">
+      <div class="label">Péremptions proches</div>
+      <div class="value">{{ peremptions_proches }}</div>
+      <div class="hint">{% if peut_rapports_utilisateur %}<a href="{% url 'rapports:peremptions' %}">Sous {{ peremptions_jours }} jours</a>{% else %}Sous {{ peremptions_jours }} jours{% endif %}</div>
+      <span class="icon"><i class="bi bi-calendar-x"></i></span>
+    </div>
+  </div>
+  {% if peut_rapports_utilisateur %}
+  <div class="col-6 col-lg-4 col-xxl-2">
+    <div class="stat-card h-100">
+      <div class="label">CA de la période</div>
+      <div class="value">{{ ca_periode|montant }} <small class="text-muted">{{ devise }}</small></div>
+      <div class="hint">Net après retours : {{ ca_periode_net|montant }} {{ devise }}</div>
+      <span class="icon"><i class="bi bi-graph-up"></i></span>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+{% if not peut_rapports_utilisateur %}
+<div class="alert alert-info">
+  <i class="bi bi-info-circle me-1"></i>
+  Les rapports détaillés, les graphiques et l'analyse de période sont réservés aux profils
+  Administrateur, Pharmacien et Responsable de gestion.
+</div>
+{% endif %}
+
+{% if peut_rapports_utilisateur %}
+<div class="alert alert-light border d-flex gap-2 align-items-start">
+  <i class="bi bi-info-circle text-primary mt-1"></i>
+  <div class="small">
+    <strong>Chiffre d'affaires et encaissements sont deux notions différentes.</strong>
+    Le chiffre d'affaires reprend les ventes validées ; les encaissements correspondent aux
+    paiements confirmés. La marge éventuelle n'est pas un bénéfice net : elle ne tient pas
+    compte de tous les coûts d'exploitation.
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-xl-3">
+    <div class="card h-100"><div class="card-body">
+      <div class="detail-label">CA brut de la période</div>
+      <div class="fs-4 fw-bold">{{ ca_periode|montant }} <span class="fs-6 text-muted">{{ devise }}</span></div>
+      <div class="text-muted-sm">{{ nombre_ventes_periode }} vente{{ nombre_ventes_periode|pluralize }} validée{{ nombre_ventes_periode|pluralize }}</div>
+    </div></div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="card h-100"><div class="card-body">
+      <div class="detail-label">Retours enregistrés</div>
+      <div class="fs-4 fw-bold">{{ retours_periode|montant }} <span class="fs-6 text-muted">{{ devise }}</span></div>
+      <div class="text-muted-sm">Opérations compensatoires de la période</div>
+    </div></div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="card h-100"><div class="card-body">
+      <div class="detail-label">CA net après retours</div>
+      <div class="fs-4 fw-bold">{{ ca_periode_net|montant }} <span class="fs-6 text-muted">{{ devise }}</span></div>
+      <div class="text-muted-sm">Brut diminué des retours</div>
+    </div></div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="card h-100"><div class="card-body">
+      <div class="detail-label">Encaissements confirmés</div>
+      <div class="fs-4 fw-bold">{{ encaissements_periode|montant }} <span class="fs-6 text-muted">{{ devise }}</span></div>
+      <div class="text-muted-sm">Paiements vérifiés et confirmés</div>
+    </div></div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-lg-7">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-graph-up me-2"></i>Évolution mensuelle des ventes</span>
+        <span class="text-muted-sm">6 derniers mois</span>
+      </div>
+      <div class="card-body">
+        <div class="chart-box"><canvas id="graphique-mensuel" aria-label="Évolution mensuelle du chiffre d'affaires" role="img"></canvas></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-pie-chart me-2"></i>Ventes par catégorie</div>
+      <div class="card-body">
+        <div class="chart-box"><canvas id="graphique-categories" aria-label="Répartition des ventes par catégorie" role="img"></canvas></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-xl-7">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-receipt me-2"></i>Dernières ventes de la période</span>
+        <a class="btn btn-sm btn-outline-primary" href="{% url 'rapports:ventes' %}?{{ pdf_query }}">Rapport des ventes</a>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead><tr><th>Numéro</th><th>Date</th><th>Client</th><th class="text-end">Montant</th><th>Statut</th></tr></thead>
+          <tbody>
+          {% for vente in dernieres_ventes %}
+            <tr>
+              <td><a href="{% url 'ventes:detail' vente.pk %}">{{ vente.numero }}</a></td>
+              <td>{{ vente.date_vente|date:"d/m/Y H:i" }}</td>
+              <td>{{ vente.client.nom_affichage|default:"Client de passage" }}</td>
+              <td class="text-end mono">{{ vente.montant_total|montant }} {{ devise }}</td>
+              <td><span class="badge badge-statut {% if vente.est_annulee %}badge-danger-doux{% else %}badge-actif{% endif %}">{{ vente.get_statut_display }}</span></td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5"><div class="empty-state"><i class="bi bi-receipt"></i>Aucune vente sur cette période.</div></td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-xl-5">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-trophy me-2"></i>Top 5 des produits vendus</span>
+        <a class="btn btn-sm btn-outline-primary" href="{% url 'rapports:ventes' %}?{{ pdf_query }}">Détails</a>
+      </div>
+      <div class="card-body">
+        {% for produit in top_produits %}
+        <div class="d-flex justify-content-between align-items-start border-bottom py-2">
+          <div class="me-2">
+            <div class="fw-semibold" style="font-size:.88rem;">{{ forloop.counter }}. {{ produit.nom }} <span class="text-muted">{{ produit.dosage }}</span></div>
+            <div class="text-muted-sm">{{ produit.categorie }} · {{ produit.quantite }} unité{{ produit.quantite|pluralize }}</div>
+          </div>
+          <div class="text-end fw-semibold mono">{{ produit.montant|montant }} {{ devise }}</div>
+        </div>
+        {% empty %}
+        <div class="empty-state"><i class="bi bi-bar-chart"></i>Aucun produit vendu sur la période.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-xl-6">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-exclamation-triangle me-2"></i>Alertes de stock</span>
+        <a class="btn btn-sm btn-light" href="{% url 'rapports:stock' %}">Tout le stock</a>
+      </div>
+      <div class="table-responsive">
+        <table class="table align-middle">
+          <thead><tr><th>Médicament</th><th class="text-end">Délivrable</th><th class="text-end">Seuil</th><th>État</th></tr></thead>
+          <tbody>
+          {% for ligne in alertes_stock %}
+            <tr>
+              <td>{{ ligne.nom }} <span class="text-muted">{{ ligne.dosage }}</span></td>
+              <td class="text-end mono">{{ ligne.stock_disponible }}</td>
+              <td class="text-end mono">{{ ligne.seuil }}</td>
+              <td>
+                {% if ligne.etat == "rupture" %}<span class="badge badge-statut badge-danger-doux">Rupture</span>
+                {% else %}<span class="badge badge-statut badge-warning-doux">Faible</span>{% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="4"><div class="empty-state"><i class="bi bi-check2-circle"></i>Aucune alerte de stock.</div></td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-xl-6">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-calendar-x me-2"></i>Lots périmés ou proches</span>
+        <a class="btn btn-sm btn-light" href="{% url 'rapports:peremptions' %}">Rapport péremptions</a>
+      </div>
+      <div class="table-responsive">
+        <table class="table align-middle">
+          <thead><tr><th>Médicament</th><th>Lot</th><th>Péremption</th><th class="text-end">Qté</th></tr></thead>
+          <tbody>
+          {% for ligne in lots_perimes %}
+            <tr class="table-danger">
+              <td>{{ ligne.medicament.nom }}</td>
+              <td>{{ ligne.lot.numero_lot }}</td>
+              <td>{{ ligne.date_peremption|date:"d/m/Y" }} <span class="badge badge-statut badge-danger-doux">Périmé</span></td>
+              <td class="text-end mono">{{ ligne.quantite }}</td>
+            </tr>
+          {% endfor %}
+          {% for ligne in lots_proches %}
+            <tr>
+              <td>{{ ligne.medicament.nom }}</td>
+              <td>{{ ligne.lot.numero_lot }}</td>
+              <td>{{ ligne.date_peremption|date:"d/m/Y" }} <span class="badge badge-statut badge-warning-doux">{{ ligne.jours }} j</span></td>
+              <td class="text-end mono">{{ ligne.quantite }}</td>
+            </tr>
+          {% endfor %}
+          {% if not lots_perimes and not lots_proches %}
+            <tr><td colspan="4"><div class="empty-state"><i class="bi bi-check2-circle"></i>Aucun lot à signaler.</div></td></tr>
+          {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-xl-6">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-credit-card me-2"></i>Encaissements par mode de paiement</div>
+      <div class="table-responsive">
+        <table class="table align-middle">
+          <thead><tr><th>Mode</th><th class="text-end">Paiements</th><th class="text-end">Montant</th></tr></thead>
+          <tbody>
+          {% for ligne in repartition_paiements.lignes %}
+            <tr><td>{{ ligne.libelle }}</td><td class="text-end mono">{{ ligne.nombre }}</td><td class="text-end mono">{{ ligne.total|montant }} {{ devise }}</td></tr>
+          {% empty %}
+            <tr><td colspan="3"><div class="empty-state"><i class="bi bi-credit-card"></i>Aucun paiement confirmé.</div></td></tr>
+          {% endfor %}
+          </tbody>
+          {% if repartition_paiements.lignes %}
+          <tfoot><tr class="fw-semibold"><td>Total</td><td></td><td class="text-end mono">{{ repartition_paiements.total|montant }} {{ devise }}</td></tr></tfoot>
+          {% endif %}
+        </table>
+      </div>
+    </div>
+  </div>
+  {% if est_admin_utilisateur %}
+  <div class="col-xl-6">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-journal-text me-2"></i>Dernières activités d'audit</span>
+        <a class="btn btn-sm btn-light" href="{% url 'rapports:journal' %}">Journal complet</a>
+      </div>
+      <div class="table-responsive">
+        <table class="table align-middle">
+          <thead><tr><th>Date</th><th>Utilisateur</th><th>Module</th><th>Action</th></tr></thead>
+          <tbody>
+          {% for activite in activites_audit %}
+            <tr>
+              <td class="text-nowrap">{{ activite.date|date:"d/m/Y H:i" }}</td>
+              <td>{{ activite.utilisateur.nom_complet|default:"Système" }}</td>
+              <td>{{ activite.module }}</td>
+              <td>{{ activite.get_action_display }}<div class="text-muted-sm">{{ activite.description|truncatechars:60 }}</div></td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="4"><div class="empty-state"><i class="bi bi-journal"></i>Aucune activité enregistrée.</div></td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+{{ graphique_mensuel|json_script:"donnees-ventes-mensuelles" }}
+{{ graphique_categories|json_script:"donnees-ventes-categories" }}
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if peut_rapports_utilisateur %}
+<script src="{% static 'vendor/chart.umd.min.js' %}"></script>
+<script>
+(function () {
+  const palette = ["#0f7a5a", "#1fa77d", "#5cc4a2", "#175cd3", "#b54708", "#b42318", "#6c5ce7", "#8db5a8"];
+  const donneesMensuelles = JSON.parse(document.getElementById("donnees-ventes-mensuelles").textContent);
+  const donneesCategories = JSON.parse(document.getElementById("donnees-ventes-categories").textContent);
+
+  const canvasMensuel = document.getElementById("graphique-mensuel");
+  if (canvasMensuel && window.Chart) {
+    new Chart(canvasMensuel, {
+      type: "line",
+      data: {
+        labels: donneesMensuelles.labels,
+        datasets: [{
+          label: "Chiffre d'affaires ({{ devise|escapejs }})",
+          data: donneesMensuelles.valeurs,
+          borderColor: "#0f7a5a",
+          backgroundColor: "rgba(15,122,90,.12)",
+          fill: true,
+          tension: .32,
+          pointRadius: 3,
+          pointBackgroundColor: "#0f7a5a"
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { callback: value => new Intl.NumberFormat("fr-FR").format(value) } } }
+      }
+    });
+  }
+
+  const canvasCategories = document.getElementById("graphique-categories");
+  if (canvasCategories && window.Chart) {
+    if (!donneesCategories.labels.length) {
+      canvasCategories.parentElement.innerHTML = '<div class="empty-state"><i class="bi bi-pie-chart"></i>Aucune vente sur la période.</div>';
+    } else {
+      new Chart(canvasCategories, {
+        type: "doughnut",
+        data: {
+          labels: donneesCategories.labels,
+          datasets: [{ data: donneesCategories.valeurs, backgroundColor: palette, borderWidth: 0 }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: "bottom", labels: { boxWidth: 10, font: { size: 11 } } },
+            tooltip: { callbacks: { label: ctx => ctx.label + " : " + new Intl.NumberFormat("fr-FR").format(ctx.parsed) + " {{ devise|escapejs }}" } }
+          }
+        }
+      });
+    }
+  }
+})();
+</script>
+{% endif %}
+{% endblock %}

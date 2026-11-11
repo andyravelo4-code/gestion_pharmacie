@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block titre %}Rapport des péremptions{% endblock %}
+{% block titre_page %}Rapport des péremptions{% endblock %}
+{% block sous_titre_page %}<div class="sub">Lots encore en stock · horizon au {{ date_limite|date:"d/m/Y" }} · valeurs en {{ devise }}</div>{% endblock %}
+
+{% block contenu %}
+<div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+  <form method="get" class="search-bar d-flex flex-wrap align-items-end gap-2 py-2">
+    <div>
+      <label class="filter-label d-block" for="{{ filtre.jours.id_for_label }}">Horizon (jours)</label>
+      {{ filtre.jours }}
+    </div>
+    <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-funnel me-1"></i>Filtrer</button>
+    <a href="{% url 'rapports:peremptions' %}" class="btn btn-light btn-sm">Seuil de la pharmacie</a>
+  </form>
+  <a class="btn btn-outline-primary" href="{% url 'rapports:pdf_peremptions' %}?{{ pdf_query }}">
+    <i class="bi bi-file-earmark-pdf me-1"></i>Télécharger le PDF
+  </a>
+</div>
+
+{% if filtre.errors %}
+<div class="alert alert-warning">L'horizon saisi est invalide ; le seuil de la pharmacie est utilisé.</div>
+{% endif %}
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3">
+    <div class="stat-card danger h-100"><div class="label">Lots périmés</div><div class="value">{{ perimes|length }}</div><div class="hint">{{ totaux.quantite_perimes }} unité{{ totaux.quantite_perimes|pluralize }}</div><span class="icon"><i class="bi bi-x-octagon"></i></span></div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card warning h-100"><div class="label">Lots proches</div><div class="value">{{ proches|length }}</div><div class="hint">{{ totaux.quantite_proches }} unité{{ totaux.quantite_proches|pluralize }} sous {{ jours }} jours</div><span class="icon"><i class="bi bi-calendar-x"></i></span></div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card h-100"><div class="label">Valeur d'achat à risque</div><div class="value fs-4">{{ totaux.valeur_achat_totale|montant }} <small class="text-muted">{{ devise }}</small></div><div class="hint">Périmés + proches péremption</div><span class="icon"><i class="bi bi-cash-stack"></i></span></div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card info h-100"><div class="label">Valeur de vente potentielle</div><div class="value fs-4">{{ totaux.valeur_vente_totale|montant }} <small class="text-muted">{{ devise }}</small></div><div class="hint">Estimation, non un bénéfice</div><span class="icon"><i class="bi bi-tag"></i></span></div>
+  </div>
+</div>
+
+<div class="alert alert-light border small">
+  <i class="bi bi-info-circle text-primary me-1"></i>
+  Les lots périmés ne sont jamais délivrés (RG08). Les valeurs affichées représentent un
+  risque de stock ; elles ne sont pas des pertes comptables définitivement constatées.
+</div>
+
+<div class="card mb-4">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-x-octagon me-2"></i>Lots périmés encore en stock</span>
+    <span class="badge badge-statut badge-danger-doux">{{ perimes|length }} lot{{ perimes|length|pluralize }}</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead><tr><th>Médicament</th><th>Catégorie</th><th>Lot</th><th>Fournisseur</th><th>Péremption</th><th class="text-end">Jours de retard</th><th class="text-end">Quantité</th><th class="text-end">Valeur d'achat</th></tr></thead>
+      <tbody>
+      {% for ligne in perimes %}
+        <tr>
+          <td><div class="fw-semibold">{{ ligne.medicament.nom }}</div><div class="text-muted-sm">{{ ligne.medicament.dosage }}</div></td>
+          <td>{{ ligne.categorie }}</td>
+          <td>{{ ligne.lot.numero_lot }}</td>
+          <td>{{ ligne.fournisseur.nom|default:"—" }}</td>
+          <td class="text-nowrap text-danger fw-semibold">{{ ligne.date_peremption|date:"d/m/Y" }}</td>
+          <td class="text-end mono">{{ ligne.jours|cut:"-" }}</td>
+          <td class="text-end mono">{{ ligne.quantite }}</td>
+          <td class="text-end mono">{{ ligne.valeur_achat|montant }} {{ devise }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="8"><div class="empty-state"><i class="bi bi-check2-circle"></i>Aucun lot périmé en stock.</div></td></tr>
+      {% endfor %}
+      </tbody>
+      {% if perimes %}
+      <tfoot><tr class="fw-semibold"><td colspan="6">Total périmé</td><td class="text-end mono">{{ totaux.quantite_perimes }}</td><td class="text-end mono">{{ totaux.valeur_achat_perimes|montant }} {{ devise }}</td></tr></tfoot>
+      {% endif %}
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-calendar-x me-2"></i>Lots proches de la péremption</span>
+    <span class="badge badge-statut badge-warning-doux">{{ proches|length }} lot{{ proches|length|pluralize }} sous {{ jours }} jours</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead><tr><th>Médicament</th><th>Catégorie</th><th>Lot</th><th>Fournisseur</th><th>Péremption</th><th class="text-end">Jours restants</th><th class="text-end">Quantité</th><th class="text-end">Valeur d'achat</th><th class="text-end">Valeur de vente</th></tr></thead>
+      <tbody>
+      {% for ligne in proches %}
+        <tr>
+          <td><div class="fw-semibold">{{ ligne.medicament.nom }}</div><div class="text-muted-sm">{{ ligne.medicament.dosage }}</div></td>
+          <td>{{ ligne.categorie }}</td>
+          <td>{{ ligne.lot.numero_lot }}</td>
+          <td>{{ ligne.fournisseur.nom|default:"—" }}</td>
+          <td class="text-nowrap fw-semibold">{{ ligne.date_peremption|date:"d/m/Y" }}</td>
+          <td class="text-end mono">{{ ligne.jours }}</td>
+          <td class="text-end mono">{{ ligne.quantite }}</td>
+          <td class="text-end mono">{{ ligne.valeur_achat|montant }} {{ devise }}</td>
+          <td class="text-end mono">{{ ligne.valeur_vente|montant }} {{ devise }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="9"><div class="empty-state"><i class="bi bi-check2-circle"></i>Aucun lot proche de la péremption sur cet horizon.</div></td></tr>
+      {% endfor %}
+      </tbody>
+      {% if proches %}
+      <tfoot><tr class="fw-semibold"><td colspan="6">Total proche péremption</td><td class="text-end mono">{{ totaux.quantite_proches }}</td><td class="text-end mono">{{ totaux.valeur_achat_proches|montant }} {{ devise }}</td><td class="text-end mono">{{ totaux.valeur_vente_proches|montant }} {{ devise }}</td></tr></tfoot>
+      {% endif %}
+    </table>
+  </div>
+</div>
+{% endblock %}

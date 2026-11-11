@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block titre %}Journal d'audit{% endblock %}
+{% block titre_page %}Journal d'audit{% endblock %}
+{% block sous_titre_page %}<div class="sub">Traçabilité des opérations sensibles · accès administrateur</div>{% endblock %}
+
+{% block contenu %}
+<div class="card mb-4">
+  <div class="card-header"><i class="bi bi-funnel me-2"></i>Filtres</div>
+  <div class="card-body">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-sm-6 col-lg-2">
+        <label class="filter-label d-block" for="{{ filtre.utilisateur.id_for_label }}">Utilisateur</label>
+        {{ filtre.utilisateur }}
+      </div>
+      <div class="col-sm-6 col-lg-2">
+        <label class="filter-label d-block" for="{{ filtre.module.id_for_label }}">Module</label>
+        {{ filtre.module }}
+      </div>
+      <div class="col-sm-6 col-lg-2">
+        <label class="filter-label d-block" for="{{ filtre.action.id_for_label }}">Action</label>
+        {{ filtre.action }}
+      </div>
+      <div class="col-sm-6 col-lg-2">
+        <label class="filter-label d-block" for="{{ filtre.debut.id_for_label }}">Du</label>
+        {{ filtre.debut }}
+      </div>
+      <div class="col-sm-6 col-lg-2">
+        <label class="filter-label d-block" for="{{ filtre.fin.id_for_label }}">Au</label>
+        {{ filtre.fin }}
+      </div>
+      <div class="col-sm-6 col-lg-2">
+        <label class="filter-label d-block" for="{{ filtre.q.id_for_label }}">Recherche</label>
+        {{ filtre.q }}
+      </div>
+      <div class="col-12 d-flex gap-2">
+        <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-search me-1"></i>Filtrer</button>
+        <a href="{% url 'rapports:journal' %}" class="btn btn-light btn-sm">Réinitialiser</a>
+      </div>
+    </form>
+    {% if filtre.errors %}
+    <div class="alert alert-warning mt-3 mb-0">Certains filtres sont invalides ; ils ont été ignorés.</div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-journal-text me-2"></i>Entrées du journal</span>
+    <span class="text-muted-sm">{{ page_obj.paginator.count }} entrée{{ page_obj.paginator.count|pluralize }}</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Utilisateur</th>
+          <th>Action</th>
+          <th>Module</th>
+          <th>Description</th>
+          <th>Objet</th>
+          <th>Adresse IP</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for entree in page_obj %}
+        <tr>
+          <td class="text-nowrap">{{ entree.date|date:"d/m/Y H:i:s" }}</td>
+          <td>{{ entree.utilisateur.nom_complet|default:"Système" }}</td>
+          <td>
+            {% if entree.action == "SUPPRESSION" or entree.action == "ANNULATION" %}
+              <span class="badge badge-statut badge-danger-doux">{{ entree.get_action_display }}</span>
+            {% elif entree.action == "MODIFICATION" or entree.action == "CORRECTION" %}
+              <span class="badge badge-statut badge-warning-doux">{{ entree.get_action_display }}</span>
+            {% elif entree.action == "VALIDATION" or entree.action == "RECEPTION" or entree.action == "VENTE" %}
+              <span class="badge badge-statut badge-actif">{{ entree.get_action_display }}</span>
+            {% else %}
+              <span class="badge badge-statut badge-info-doux">{{ entree.get_action_display }}</span>
+            {% endif %}
+          </td>
+          <td>{{ entree.module }}</td>
+          <td>
+            {{ entree.description }}
+            {% if entree.details %}<div class="text-muted-sm">{{ entree.details|truncatechars:100 }}</div>{% endif %}
+          </td>
+          <td class="text-muted-sm">{{ entree.objet_id|default:"—" }}</td>
+          <td class="text-muted-sm">{{ entree.adresse_ip|default:"—" }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="7"><div class="empty-state"><i class="bi bi-journal"></i>Aucune entrée ne correspond aux filtres.</div></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-body pt-0">{% include "includes/pagination.html" %}</div>
+</div>
+{% endblock %}

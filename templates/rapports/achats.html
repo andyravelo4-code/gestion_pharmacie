@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block titre %}Rapport des achats{% endblock %}
+{% block titre_page %}Rapport des achats{% endblock %}
+{% block sous_titre_page %}<div class="sub">{{ libelle_periode }} · montants en {{ devise }}</div>{% endblock %}
+
+{% block contenu %}
+<div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+  <form method="get" class="search-bar d-flex flex-wrap align-items-end gap-2 py-2">
+    <div>
+      <label class="filter-label d-block" for="{{ filtre.debut.id_for_label }}">Du</label>
+      {{ filtre.debut }}
+    </div>
+    <div>
+      <label class="filter-label d-block" for="{{ filtre.fin.id_for_label }}">Au</label>
+      {{ filtre.fin }}
+    </div>
+    <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-funnel me-1"></i>Filtrer</button>
+    <a href="{% url 'rapports:achats' %}" class="btn btn-light btn-sm">30 derniers jours</a>
+  </form>
+  <a class="btn btn-outline-primary" href="{% url 'rapports:pdf_achats' %}?{{ pdf_query }}">
+    <i class="bi bi-file-earmark-pdf me-1"></i>Télécharger le PDF
+  </a>
+</div>
+
+{% if filtre.errors %}
+<div class="alert alert-warning">Dates invalides : la période par défaut de 30 jours est appliquée.</div>
+{% endif %}
+
+<div class="alert alert-light border small">
+  <i class="bi bi-info-circle text-primary me-1"></i>
+  Le total commandé reprend les commandes engagées (hors brouillons et annulations).
+  Le total réceptionné correspond aux livraisons effectives de la période : seule la
+  réception modifie le stock.
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3">
+    <div class="stat-card h-100"><div class="label">Total commandé</div><div class="value fs-4">{{ total_commande|montant }} <small class="text-muted">{{ devise }}</small></div><span class="icon"><i class="bi bi-cart-plus"></i></span></div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card h-100"><div class="label">Total réceptionné</div><div class="value fs-4">{{ total_receptionne|montant }} <small class="text-muted">{{ devise }}</small></div><span class="icon"><i class="bi bi-truck"></i></span></div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card info h-100"><div class="label">Commandes</div><div class="value">{{ nombre_commandes }}</div><div class="hint">Sur la période</div><span class="icon"><i class="bi bi-file-earmark-text"></i></span></div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card info h-100"><div class="label">Réceptions</div><div class="value">{{ nombre_receptions }}</div><div class="hint">Livraisons enregistrées</div><span class="icon"><i class="bi bi-box-seam"></i></span></div>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-cart-plus me-2"></i>Commandes de la période</span>
+    <span class="text-muted-sm">{{ page_commandes.paginator.count }} commande{{ page_commandes.paginator.count|pluralize }}</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead><tr><th>Numéro</th><th>Fournisseur</th><th>Date</th><th>Statut</th><th class="text-end">Quantité</th><th class="text-end">Montant</th>{% if peut_stock %}<th class="text-end">PDF</th>{% endif %}</tr></thead>
+      <tbody>
+      {% for commande in page_commandes %}
+        <tr>
+          <td><a href="{% url 'achats:detail' commande.pk %}">{{ commande.numero }}</a></td>
+          <td>{{ commande.fournisseur.nom }}</td>
+          <td class="text-nowrap">{{ commande.date_creation|date:"d/m/Y" }}</td>
+          <td>
+            {% if commande.statut == "RECEPTIONNEE" %}<span class="badge badge-statut badge-actif">{{ commande.get_statut_display }}</span>
+            {% elif commande.statut == "ANNULEE" %}<span class="badge badge-statut badge-danger-doux">{{ commande.get_statut_display }}</span>
+            {% elif commande.statut == "PARTIELLEMENT_RECEPTIONNEE" %}<span class="badge badge-statut badge-warning-doux">{{ commande.get_statut_display }}</span>
+            {% else %}<span class="badge badge-statut badge-info-doux">{{ commande.get_statut_display }}</span>{% endif %}
+          </td>
+          <td class="text-end mono">{{ commande.quantite_totale_commandee }}</td>
+          <td class="text-end mono">{{ commande.montant_total|montant }} {{ devise }}</td>
+          {% if peut_stock %}<td class="text-end"><a class="btn btn-sm btn-light" href="{% url 'rapports:bon_commande' commande.pk %}" title="Bon de commande PDF"><i class="bi bi-file-earmark-pdf"></i></a></td>{% endif %}
+        </tr>
+      {% empty %}
+        <tr><td colspan="7"><div class="empty-state"><i class="bi bi-cart"></i>Aucune commande sur la période.</div></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-body pt-0">{% include "includes/pagination.html" with page_obj=page_commandes %}</div>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-truck me-2"></i>Réceptions de la période</span>
+    <span class="text-muted-sm">{{ page_receptions.paginator.count }} réception{{ page_receptions.paginator.count|pluralize }}</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead><tr><th>Numéro</th><th>Commande</th><th>Fournisseur</th><th>Date</th><th class="text-end">Quantité</th><th class="text-end">Montant</th>{% if peut_stock %}<th class="text-end">PDF</th>{% endif %}</tr></thead>
+      <tbody>
+      {% for reception in page_receptions %}
+        <tr>
+          <td>{{ reception.numero }}</td>
+          <td>{{ reception.commande.numero }}</td>
+          <td>{{ reception.commande.fournisseur.nom }}</td>
+          <td class="text-nowrap">{{ reception.date_reception|date:"d/m/Y H:i" }}</td>
+          <td class="text-end mono">{{ reception.quantite_totale }}</td>
+          <td class="text-end mono">{{ reception.montant_total|montant }} {{ devise }}</td>
+          {% if peut_stock %}<td class="text-end"><a class="btn btn-sm btn-light" href="{% url 'rapports:bon_reception' reception.pk %}" title="Bon de réception PDF"><i class="bi bi-file-earmark-pdf"></i></a></td>{% endif %}
+        </tr>
+      {% empty %}
+        <tr><td colspan="7"><div class="empty-state"><i class="bi bi-truck"></i>Aucune réception sur la période.</div></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-body pt-0">{% include "includes/pagination.html" with page_obj=page_receptions %}</div>
+</div>
+{% endblock %}

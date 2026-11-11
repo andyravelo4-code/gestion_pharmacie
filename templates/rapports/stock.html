@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block titre %}Rapport de stock{% endblock %}
+{% block titre_page %}Rapport de stock{% endblock %}
+{% block sous_titre_page %}<div class="sub">État complet du stock actif · valeurs en {{ devise }}</div>{% endblock %}
+
+{% block contenu %}
+<div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+  <form method="get" class="search-bar d-flex flex-wrap align-items-end gap-2 py-2">
+    <div>
+      <label class="filter-label d-block" for="{{ filtre.q.id_for_label }}">Recherche</label>
+      {{ filtre.q }}
+    </div>
+    <div>
+      <label class="filter-label d-block" for="{{ filtre.etat.id_for_label }}">État</label>
+      {{ filtre.etat }}
+    </div>
+    <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-search me-1"></i>Filtrer</button>
+    <a href="{% url 'rapports:stock' %}" class="btn btn-light btn-sm">Réinitialiser</a>
+  </form>
+  <a class="btn btn-outline-primary" href="{% url 'rapports:pdf_stock' %}{% if pdf_query %}?{{ pdf_query }}{% endif %}">
+    <i class="bi bi-file-earmark-pdf me-1"></i>Télécharger le PDF
+  </a>
+</div>
+
+{% if filtre.errors %}
+<div class="alert alert-warning">Certains filtres sont invalides ; ils ont été ignorés.</div>
+{% endif %}
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3">
+    <div class="stat-card h-100"><div class="label">Références</div><div class="value">{{ nb_lignes }}</div><div class="hint">Médicaments actifs affichés</div><span class="icon"><i class="bi bi-capsule"></i></span></div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card h-100"><div class="label">Quantité physique</div><div class="value">{{ totaux.quantite_physique }}</div><div class="hint">Délivrable : {{ totaux.quantite_delivrable }}</div><span class="icon"><i class="bi bi-box-seam"></i></span></div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card h-100"><div class="label">Valeur au prix d'achat</div><div class="value fs-4">{{ totaux.valeur_achat|montant }} <small class="text-muted">{{ devise }}</small></div><div class="hint">Valorisation du stock physique</div><span class="icon"><i class="bi bi-cash-stack"></i></span></div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card info h-100"><div class="label">Valeur potentielle de vente</div><div class="value fs-4">{{ totaux.valeur_vente|montant }} <small class="text-muted">{{ devise }}</small></div><div class="hint">Estimation, hors marges et coûts</div><span class="icon"><i class="bi bi-tag"></i></span></div>
+  </div>
+</div>
+
+<div class="alert alert-light border small">
+  <i class="bi bi-info-circle text-primary me-1"></i>
+  Le <strong>stock physique</strong> additionne tous les lots, y compris périmés ou bloqués.
+  Le <strong>stock délivrable</strong> exclut les lots périmés, bloqués ou vides. La valeur
+  potentielle au prix de vente est une estimation et ne constitue pas un bénéfice net.
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-clipboard-data me-2"></i>État du stock</span>
+    <span class="text-muted-sm">{{ page_obj.paginator.count }} ligne{{ page_obj.paginator.count|pluralize }}</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead>
+        <tr>
+          <th>Médicament</th>
+          <th>Catégorie</th>
+          <th class="text-end">Stock physique</th>
+          <th class="text-end">Délivrable</th>
+          <th class="text-end">Seuil</th>
+          <th class="text-end">Valeur d'achat</th>
+          <th class="text-end">Valeur de vente potentielle</th>
+          <th>État</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for ligne in page_obj %}
+        <tr>
+          <td>
+            <div class="fw-semibold">{{ ligne.nom }}</div>
+            <div class="text-muted-sm">{{ ligne.dosage }}{% if ligne.medicament.denomination_generique %} · {{ ligne.medicament.denomination_generique }}{% endif %}</div>
+          </td>
+          <td>{{ ligne.categorie }}</td>
+          <td class="text-end mono">{{ ligne.stock_physique }}</td>
+          <td class="text-end mono fw-semibold">{{ ligne.stock_disponible }}</td>
+          <td class="text-end mono">{{ ligne.seuil }}</td>
+          <td class="text-end mono">{{ ligne.valeur_achat|montant }} {{ devise }}</td>
+          <td class="text-end mono">{{ ligne.valeur_vente|montant }} {{ devise }}</td>
+          <td>
+            {% if ligne.etat == "rupture" %}<span class="badge badge-statut badge-danger-doux">Rupture</span>
+            {% elif ligne.etat == "faible" %}<span class="badge badge-statut badge-warning-doux">Faible</span>
+            {% else %}<span class="badge badge-statut badge-actif">Normal</span>{% endif %}
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="8"><div class="empty-state"><i class="bi bi-box"></i>Aucun médicament ne correspond aux filtres.</div></td></tr>
+      {% endfor %}
+      </tbody>
+      {% if page_obj.paginator.count %}
+      <tfoot>
+        <tr class="fw-semibold">
+          <td colspan="2">Totaux affichés</td>
+          <td class="text-end mono">{{ totaux.quantite_physique }}</td>
+          <td class="text-end mono">{{ totaux.quantite_delivrable }}</td>
+          <td></td>
+          <td class="text-end mono">{{ totaux.valeur_achat|montant }} {{ devise }}</td>
+          <td class="text-end mono">{{ totaux.valeur_vente|montant }} {{ devise }}</td>
+          <td></td>
+        </tr>
+      </tfoot>
+      {% endif %}
+    </table>
+  </div>
+  <div class="card-body pt-0">{% include "includes/pagination.html" %}</div>
+</div>
+{% endblock %}

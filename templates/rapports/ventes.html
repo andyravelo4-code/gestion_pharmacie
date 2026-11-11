@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block titre %}Rapport des ventes{% endblock %}
+{% block titre_page %}Rapport des ventes{% endblock %}
+{% block sous_titre_page %}<div class="sub">{{ libelle_periode }} · montants en {{ devise }}</div>{% endblock %}
+
+{% block contenu %}
+<div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+  <form method="get" class="search-bar d-flex flex-wrap align-items-end gap-2 py-2">
+    <div>
+      <label class="filter-label d-block" for="{{ filtre.debut.id_for_label }}">Du</label>
+      {{ filtre.debut }}
+    </div>
+    <div>
+      <label class="filter-label d-block" for="{{ filtre.fin.id_for_label }}">Au</label>
+      {{ filtre.fin }}
+    </div>
+    <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-funnel me-1"></i>Filtrer</button>
+    <a href="{% url 'rapports:ventes' %}" class="btn btn-light btn-sm">30 derniers jours</a>
+  </form>
+  <a class="btn btn-outline-primary" href="{% url 'rapports:pdf_ventes' %}?{{ pdf_query }}">
+    <i class="bi bi-file-earmark-pdf me-1"></i>Télécharger le PDF
+  </a>
+</div>
+
+{% if filtre.errors %}
+<div class="alert alert-warning">Dates invalides : la période par défaut de 30 jours est appliquée.</div>
+{% endif %}
+
+<div class="alert alert-light border small">
+  <i class="bi bi-info-circle text-primary me-1"></i>
+  Le chiffre d'affaires brut additionne les ventes validées de la période. Les retours sont
+  déduits pour obtenir le CA net. Les encaissements confirmés correspondent uniquement aux
+  paiements vérifiés et peuvent différer du chiffre d'affaires.
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-4 col-xl-2">
+    <div class="stat-card h-100"><div class="label">CA brut</div><div class="value fs-4">{{ totaux.brut|montant }} <small class="text-muted">{{ devise }}</small></div><span class="icon"><i class="bi bi-receipt"></i></span></div>
+  </div>
+  <div class="col-6 col-lg-4 col-xl-2">
+    <div class="stat-card warning h-100"><div class="label">Retours</div><div class="value fs-4">{{ totaux.retours|montant }} <small class="text-muted">{{ devise }}</small></div><span class="icon"><i class="bi bi-arrow-return-left"></i></span></div>
+  </div>
+  <div class="col-6 col-lg-4 col-xl-2">
+    <div class="stat-card h-100"><div class="label">CA net</div><div class="value fs-4">{{ totaux.net|montant }} <small class="text-muted">{{ devise }}</small></div><span class="icon"><i class="bi bi-graph-up"></i></span></div>
+  </div>
+  <div class="col-6 col-lg-4 col-xl-2">
+    <div class="stat-card info h-100"><div class="label">Ventes</div><div class="value">{{ totaux.nombre }}</div><div class="hint">{{ totaux.articles }} article{{ totaux.articles|pluralize }} vendu{{ totaux.articles|pluralize }}</div><span class="icon"><i class="bi bi-basket"></i></span></div>
+  </div>
+  <div class="col-6 col-lg-4 col-xl-2">
+    <div class="stat-card h-100"><div class="label">Panier moyen</div><div class="value fs-4">{{ totaux.panier_moyen|montant }} <small class="text-muted">{{ devise }}</small></div><span class="icon"><i class="bi bi-calculator"></i></span></div>
+  </div>
+  <div class="col-6 col-lg-4 col-xl-2">
+    <div class="stat-card h-100"><div class="label">Encaissements</div><div class="value fs-4">{{ totaux.encaissements|montant }} <small class="text-muted">{{ devise }}</small></div><div class="hint">Paiements confirmés</div><span class="icon"><i class="bi bi-credit-card"></i></span></div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-xl-8">
+    <div class="card mb-3">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-receipt me-2"></i>Ventes de la période</span>
+        <span class="text-muted-sm">{{ page_obj.paginator.count }} vente{{ page_obj.paginator.count|pluralize }}</span>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead><tr><th>Numéro</th><th>Date</th><th>Client</th><th>Caissier</th><th class="text-end">Brut</th><th class="text-end">Retours</th><th class="text-end">Net</th><th>Statut</th></tr></thead>
+          <tbody>
+          {% for vente in page_obj %}
+            <tr>
+              <td><a href="{% url 'ventes:detail' vente.pk %}">{{ vente.numero }}</a></td>
+              <td class="text-nowrap">{{ vente.date_vente|date:"d/m/Y H:i" }}</td>
+              <td>{{ vente.client.nom_affichage|default:"Client de passage" }}</td>
+              <td>{{ vente.utilisateur.nom_complet|default:"—" }}</td>
+              <td class="text-end mono">{{ vente.montant_total|montant }} {{ devise }}</td>
+              <td class="text-end mono">{{ vente.montant_retourne|montant }} {{ devise }}</td>
+              <td class="text-end mono fw-semibold">{{ vente.montant_net|montant }} {{ devise }}</td>
+              <td><span class="badge badge-statut {% if vente.est_annulee %}badge-danger-doux{% else %}badge-actif{% endif %}">{{ vente.get_statut_display }}</span></td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="8"><div class="empty-state"><i class="bi bi-receipt"></i>Aucune vente sur la période.</div></td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="card-body pt-0">{% include "includes/pagination.html" %}</div>
+    </div>
+  </div>
+
+  <div class="col-xl-4">
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-trophy me-2"></i>Top 5 produits</div>
+      <div class="card-body">
+        {% for produit in top_produits %}
+        <div class="d-flex justify-content-between border-bottom py-2">
+          <div class="me-2"><div class="fw-semibold" style="font-size:.86rem;">{{ produit.nom }} <span class="text-muted">{{ produit.dosage }}</span></div><div class="text-muted-sm">{{ produit.categorie }} · {{ produit.quantite }} unité{{ produit.quantite|pluralize }}</div></div>
+          <div class="text-end fw-semibold mono">{{ produit.montant|montant }} {{ devise }}</div>
+        </div>
+        {% empty %}
+        <div class="empty-state"><i class="bi bi-bar-chart"></i>Aucun produit vendu.</div>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><i class="bi bi-credit-card me-2"></i>Modes de paiement</div>
+      <div class="table-responsive">
+        <table class="table align-middle">
+          <thead><tr><th>Mode</th><th class="text-end">Paiements</th><th class="text-end">Montant</th></tr></thead>
+          <tbody>
+          {% for ligne in modes_paiement.lignes %}
+            <tr><td>{{ ligne.libelle }}</td><td class="text-end mono">{{ ligne.nombre }}</td><td class="text-end mono">{{ ligne.total|montant }} {{ devise }}</td></tr>
+          {% empty %}
+            <tr><td colspan="3"><div class="empty-state"><i class="bi bi-credit-card"></i>Aucun paiement confirmé.</div></td></tr>
+          {% endfor %}
+          </tbody>
+          {% if modes_paiement.lignes %}
+          <tfoot><tr class="fw-semibold"><td>Total</td><td></td><td class="text-end mono">{{ modes_paiement.total|montant }} {{ devise }}</td></tr></tfoot>
+          {% endif %}
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
