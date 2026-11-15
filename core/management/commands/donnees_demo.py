@@ -520,7 +520,35 @@ class Command(BaseCommand):
             self.medicaments[donnees["cle"]] = medicament
 
     def _creer_photo(self, medicament: Medicament, index: int):
-        """Génère une photo carrée JPEG avec les initiales et le nom."""
+        """Réutilise une photo réelle si elle existe, sinon en génère une.
+
+        Les photos libres de droits téléchargées pour la démonstration sont
+        conservées dans ``media/medicaments/demo/``. Leur présence évite de les
+        écraser par une vignette synthétique lors d'un nouveau
+        ``donnees_demo --reinitialiser``.
+        """
+        nom_fichier = f"medicaments/demo/medicament_{index:02d}.jpg"
+        if default_storage.exists(nom_fichier):
+            medicament.photo.name = nom_fichier
+            medicament.save(update_fields=["photo"])
+            return
+
+        source = (
+            Path(settings.BASE_DIR)
+            / "static"
+            / "img"
+            / "medicaments"
+            / "demo"
+            / f"medicament_{index:02d}.jpg"
+        )
+        if source.is_file():
+            chemin = default_storage.save(
+                nom_fichier, ContentFile(source.read_bytes())
+            )
+            medicament.photo.name = chemin
+            medicament.save(update_fields=["photo"])
+            return
+
         fond, texte = COULEURS_PHOTOS[(index - 1) % len(COULEURS_PHOTOS)]
         taille = 480
         image = Image.new("RGB", (taille, taille), fond)
@@ -564,7 +592,6 @@ class Command(BaseCommand):
 
         tampon = BytesIO()
         image.save(tampon, format="JPEG", quality=88, optimize=True)
-        nom_fichier = f"medicaments/demo/medicament_{index:02d}.jpg"
         if default_storage.exists(nom_fichier):
             default_storage.delete(nom_fichier)
         chemin = default_storage.save(
