@@ -164,6 +164,7 @@ Le test `core/test_smoke.py` charge le jeu de données et vérifie le rendu de
 - MLD détaillé table par table ;
 - diagrammes de séquence (vente FEFO, réception, retour/annulation) ;
 - diagrammes d’état (commande, vente, lot) ;
+- exports PNG des 8 diagrammes dans `docs/diagrammes/` (galerie en §9) ;
 - correspondance RG01–RG12 ;
 - sécurité, transactions et stratégie de tests.
 

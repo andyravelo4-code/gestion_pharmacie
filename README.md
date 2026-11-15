@@ -591,7 +591,8 @@ et testées régulièrement.
 - [`docs/GUIDE_UTILISATION.md`](docs/GUIDE_UTILISATION.md) — guide par rôle et
   parcours métier.
 - [`docs/CONCEPTION.md`](docs/CONCEPTION.md) — dossier de conception : MCD,
-  MLD, cas d'utilisation, séquences, règles, sécurité et tests.
+  MLD, cas d'utilisation, séquences, règles, sécurité et tests, avec galerie
+  des diagrammes exportés en PNG ([`docs/diagrammes/`](docs/diagrammes/)).
 - [`docs/LIVRABLES.md`](docs/LIVRABLES.md) — checklist des 13 livrables du
   cahier des charges et de leur emplacement.
 - [`docs/SPEC_INTERNE.md`](docs/SPEC_INTERNE.md) — conventions internes de

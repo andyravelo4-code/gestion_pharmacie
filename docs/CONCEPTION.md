@@ -41,6 +41,8 @@ flowchart LR
     A --> DB
 ```
 
+> Export image : [Architecture logicielle](diagrammes/01-architecture.png)
+
 ### 1.1 Applications Django
 
 | Application | Responsabilité |
@@ -106,6 +108,8 @@ graph LR
     Gestion --> UC5
 ```
 
+> Export image : [Acteurs et cas d'utilisation](diagrammes/02-cas-utilisation.png)
+
 ### 2.1 Matrice des autorisations
 
 | Fonction | Rôles autorisés |
@@ -164,6 +168,8 @@ erDiagram
     LIGNE_VENTE ||--o{ LIGNE_RETOUR : "est retournée"
 ```
 
+> Export image : [MCD — relations entre entités](diagrammes/03-mcd-relations.png)
+
 ### 3.1 Entités principales et attributs
 
 ```mermaid
@@ -210,6 +216,8 @@ erDiagram
         decimal sous_total
     }
 ```
+
+> Export image : [MCD — entités et attributs](diagrammes/04-mcd-entites-attributs.png)
 
 ---
 
@@ -374,6 +382,8 @@ sequenceDiagram
     end
 ```
 
+> Export image : [Séquence — vente FEFO et idempotence](diagrammes/05-sequence-vente-fefo.png)
+
 ### 6.2 Séquence : réception d'une commande
 
 ```mermaid
@@ -403,6 +413,8 @@ sequenceDiagram
     end
 ```
 
+> Export image : [Séquence — réception d'une commande](diagrammes/06-sequence-reception.png)
+
 ### 6.3 Cycle de vie des objets métier
 
 ```mermaid
@@ -431,6 +443,8 @@ stateDiagram-v2
     }
 ```
 
+> Export image : [Cycle de vie des objets métier](diagrammes/07-cycle-de-vie.png)
+
 ### 6.4 Séquence : retour et annulation
 
 ```mermaid
@@ -453,6 +467,8 @@ sequenceDiagram
     S->>DB: commit
     S-->>C: Opération tracée, vente conservée (RG10)
 ```
+
+> Export image : [Séquence — retour et annulation](diagrammes/08-sequence-retour-annulation.png)
 
 ---
 
@@ -507,3 +523,47 @@ La suite de tests couvre :
 | **Idempotence** | Propriété qui garantit qu'une même opération ne s'applique qu'une fois. |
 | **Compensation** | Opération inverse tracée (retour/annulation) au lieu d'une suppression. |
 | **Audit** | Enregistrement inaltérable de l'auteur, de la date et du détail d'une action. |
+
+---
+
+## 9. Galerie des diagrammes exportés
+
+Les huit diagrammes ci-dessus sont également fournis en PNG dans
+`docs/diagrammes/`. Cliquer sur une vignette pour ouvrir l'image en
+taille réelle.
+
+<div align="center">
+
+**Architecture logicielle**
+
+<a href="diagrammes/01-architecture.png"><img src="diagrammes/01-architecture.png" width="420" alt="Architecture logicielle"></a>
+
+**Acteurs et cas d'utilisation**
+
+<a href="diagrammes/02-cas-utilisation.png"><img src="diagrammes/02-cas-utilisation.png" width="420" alt="Acteurs et cas d'utilisation"></a>
+
+**MCD — relations entre entités**
+
+<a href="diagrammes/03-mcd-relations.png"><img src="diagrammes/03-mcd-relations.png" width="420" alt="MCD — relations entre entités"></a>
+
+**MCD — entités et attributs**
+
+<a href="diagrammes/04-mcd-entites-attributs.png"><img src="diagrammes/04-mcd-entites-attributs.png" width="420" alt="MCD — entités et attributs"></a>
+
+**Séquence — vente FEFO et idempotence**
+
+<a href="diagrammes/05-sequence-vente-fefo.png"><img src="diagrammes/05-sequence-vente-fefo.png" width="420" alt="Séquence — vente FEFO et idempotence"></a>
+
+**Séquence — réception d'une commande**
+
+<a href="diagrammes/06-sequence-reception.png"><img src="diagrammes/06-sequence-reception.png" width="420" alt="Séquence — réception d'une commande"></a>
+
+**Cycle de vie des objets métier**
+
+<a href="diagrammes/07-cycle-de-vie.png"><img src="diagrammes/07-cycle-de-vie.png" width="420" alt="Cycle de vie des objets métier"></a>
+
+**Séquence — retour et annulation**
+
+<a href="diagrammes/08-sequence-retour-annulation.png"><img src="diagrammes/08-sequence-retour-annulation.png" width="420" alt="Séquence — retour et annulation"></a>
+
+</div>
