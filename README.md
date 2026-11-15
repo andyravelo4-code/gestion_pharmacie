@@ -294,7 +294,9 @@ un inventaire en cours et des alertes de stock.
 ```
 
 Les tests couvrent les modèles, les services (FEFO, stock négatif, retours),
-les permissions, les formulaires, les vues et la génération PDF. Les tests
+les permissions, les formulaires, les vues et la génération PDF. Le test de
+fumée `core/test_smoke.py` rend toutes les pages HTML et tous les PDF à partir
+du jeu de démonstration. Dernier résultat connu : **110 tests, OK**. Les tests
 utilisent une base dédiée et ne touchent pas `db.sqlite3`.
 
 ---
@@ -584,11 +586,17 @@ et testées régulièrement.
 
 ## Documentation
 
+- [`docs/INSTALLATION.md`](docs/INSTALLATION.md) — manuel d'installation et de
+  configuration (développement, PostgreSQL, Gunicorn, Nginx, HTTPS, sauvegardes).
 - [`docs/GUIDE_UTILISATION.md`](docs/GUIDE_UTILISATION.md) — guide par rôle et
   parcours métier.
 - [`docs/CONCEPTION.md`](docs/CONCEPTION.md) — dossier de conception : MCD,
   MLD, cas d'utilisation, séquences, règles, sécurité et tests.
+- [`docs/LIVRABLES.md`](docs/LIVRABLES.md) — checklist des 13 livrables du
+  cahier des charges et de leur emplacement.
 - [`docs/SPEC_INTERNE.md`](docs/SPEC_INTERNE.md) — conventions internes de
   développement (contrat d'URL, modèles, services).
+- [`base_de_donnees/README.md`](base_de_donnees/README.md) — export SQL de
+  démonstration et procédure de restauration.
 - [`cahier_des_charges_pharmagest.md`](cahier_des_charges_pharmagest.md) —
   cahier des charges initial.
