@@ -2,8 +2,10 @@
 import uuid
 from decimal import Decimal
 
+from django.contrib.staticfiles import finders
 from django.core.validators import FileExtensionValidator, MinValueValidator
 from django.db import models
+from django.templatetags.static import static
 from django.urls import reverse
 from django.utils import timezone
 
@@ -115,6 +117,31 @@ class Medicament(models.Model):
 
     def get_absolute_url(self):
         return reverse("medicaments:detail", args=[self.pk])
+
+    @property
+    def photo_url(self):
+        """URL d'affichage de la photo, avec repli sur les visuels livrés.
+
+        Le dossier ``media/`` n'est pas versionné : une base restaurée peut
+        référencer une photo absente du disque. On retombe alors sur le visuel
+        de démonstration stocké dans ``static/img/medicaments/demo/`` afin de
+        ne jamais afficher une image cassée.
+        """
+        if self.photo:
+            try:
+                if self.photo.storage.exists(self.photo.name):
+                    return self.photo.url
+            except (OSError, ValueError):
+                pass
+        nom = (
+            self.photo.name.rsplit("/", 1)[-1]
+            if self.photo
+            else f"medicament_{self.pk or 0:02d}.jpg"
+        )
+        chemin = f"img/medicaments/demo/{nom}"
+        if finders.find(chemin):
+            return static(chemin)
+        return ""
 
     @property
     def est_actif(self):

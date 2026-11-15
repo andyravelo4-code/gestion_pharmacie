@@ -27,10 +27,10 @@
             <div class="col-md-4">{% include "includes/form_field.html" with field=form.seuil_alerte %}</div>
             <div class="col-md-8">{% include "includes/form_field.html" with field=form.photo %}</div>
             <div class="col-md-4 d-flex align-items-end pb-3">
-              {% if form.instance.photo %}
+              {% if form.instance.photo_url %}
               <div class="text-muted small">
                 <i class="bi bi-image me-1"></i>Photo actuelle :
-                <a href="{{ form.instance.photo.url }}" target="_blank" rel="noopener">voir l'image</a>
+                <a href="{{ form.instance.photo_url }}" target="_blank" rel="noopener">voir l'image</a>
               </div>
               {% endif %}
             </div>

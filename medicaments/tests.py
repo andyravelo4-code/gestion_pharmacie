@@ -6,6 +6,7 @@ from decimal import Decimal
 from io import BytesIO
 
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.templatetags.static import static
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
@@ -133,6 +134,26 @@ class MedicamentCrudTests(BaseMedicamentsTest):
                 action=JournalAudit.Action.CREATION, module="Médicaments"
             ).exists()
         )
+
+    def test_photo_url_repli_sur_visuel_statique(self):
+        """Une photo absente du disque retombe sur le visuel versionné."""
+        medicament = Medicament.objects.create(
+            nom="Sans photo",
+            categorie=self.categorie,
+            forme=Medicament.Forme.COMPRIME,
+            dosage="500 mg",
+            prix_vente=Decimal("100"),
+        )
+        medicament.photo.name = "medicaments/demo/medicament_01.jpg"
+        medicament.save(update_fields=["photo"])
+        self.assertEqual(
+            medicament.photo_url,
+            static("img/medicaments/demo/medicament_01.jpg"),
+        )
+
+        medicament.photo.name = "medicaments/demo/introuvable.jpg"
+        medicament.save(update_fields=["photo"])
+        self.assertEqual(medicament.photo_url, "")
 
     def test_code_barres_duplique_refuse(self):
         Medicament.objects.create(

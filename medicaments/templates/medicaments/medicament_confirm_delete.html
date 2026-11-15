@@ -11,8 +11,8 @@
       <div class="card-header text-danger"><i class="bi bi-exclamation-triangle me-2"></i>Confirmation de suppression</div>
       <div class="card-body">
         <div class="d-flex align-items-center gap-3 mb-3">
-          {% if medicament.photo %}
-          <img src="{{ medicament.photo.url }}" alt="{{ medicament.nom }}" class="med-photo">
+          {% if medicament.photo_url %}
+          <img src="{{ medicament.photo_url }}" alt="{{ medicament.nom }}" class="med-photo">
           {% else %}
           <div class="med-photo-placeholder"><i class="bi bi-capsule"></i></div>
           {% endif %}

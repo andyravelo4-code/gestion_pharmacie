@@ -37,8 +37,8 @@
   <div class="col-lg-4">
     <div class="card mb-4">
       <div class="card-body text-center">
-        {% if medicament.photo %}
-        <img src="{{ medicament.photo.url }}" alt="{{ medicament.nom }}" class="med-photo-lg mb-3">
+        {% if medicament.photo_url %}
+        <img src="{{ medicament.photo_url }}" alt="{{ medicament.nom }}" class="med-photo-lg mb-3">
         {% else %}
         <div class="med-photo-placeholder lg mx-auto mb-3"><i class="bi bi-capsule"></i></div>
         {% endif %}

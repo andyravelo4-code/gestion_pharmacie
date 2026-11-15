@@ -90,8 +90,8 @@
         <tr>
           <td>
             <div class="d-flex align-items-center gap-2">
-              {% if medicament.photo %}
-              <img src="{{ medicament.photo.url }}" alt="{{ medicament.nom }}" class="med-photo">
+              {% if medicament.photo_url %}
+              <img src="{{ medicament.photo_url }}" alt="{{ medicament.nom }}" class="med-photo">
               {% else %}
               <div class="med-photo-placeholder"><i class="bi bi-capsule"></i></div>
               {% endif %}
