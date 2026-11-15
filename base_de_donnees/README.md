@@ -19,6 +19,20 @@ L’export contient :
 - 30 ventes, 30 paiements, 2 retours/annulations ;
 - 109 mouvements de stock, 1 inventaire et le journal d’audit de démonstration.
 
+Douze médicaments référencent une photo libre de droits
+(`medicaments/demo/medicament_XX.jpg`). Les fichiers correspondants sont
+versionnés dans `static/img/medicaments/demo/` ; après restauration, les
+copier dans `media/` :
+
+```bash
+mkdir -p media/medicaments/demo
+cp static/img/medicaments/demo/*.jpg media/medicaments/demo/
+```
+
+Les autres médicaments affichent le visuel de remplacement de l’interface.
+Les crédits et licences sont détaillés dans
+[`docs/CREDITS_IMAGES.md`](../docs/CREDITS_IMAGES.md).
+
 > Toutes les données sont **fictives** et destinées à la démonstration ou aux
 > tests. Ne jamais les utiliser en production.
 
@@ -53,7 +67,7 @@ reproductible reste :
 ## Empreinte SHA-256
 
 ```text
-f4ac4f7268b7fd55d59ff35a00ba8bb2cedbdcb51110ec67a9f04c4957f5c659  pharmagest_demo.sql.gz
+34287c655818ea41a378661a151bbcfe2a6c19ba1edc730a85433a540e97be36  pharmagest_demo.sql.gz
 ```
 
 ## Compatibilité

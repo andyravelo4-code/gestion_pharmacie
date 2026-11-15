@@ -596,6 +596,8 @@ et testées régulièrement.
   cahier des charges et de leur emplacement.
 - [`docs/SPEC_INTERNE.md`](docs/SPEC_INTERNE.md) — conventions internes de
   développement (contrat d'URL, modèles, services).
+- [`docs/CREDITS_IMAGES.md`](docs/CREDITS_IMAGES.md) — crédits, auteurs et
+  licences des photos de médicaments utilisées pour la démonstration.
 - [`base_de_donnees/README.md`](base_de_donnees/README.md) — export SQL de
   démonstration et procédure de restauration.
 - [`cahier_des_charges_pharmagest.md`](cahier_des_charges_pharmagest.md) —
